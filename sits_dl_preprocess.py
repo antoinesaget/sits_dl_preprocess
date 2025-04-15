@@ -98,6 +98,7 @@ def setup_logging(log_file="download_process.log"):
     logging.getLogger().setLevel(logging.ERROR)
 
     # Configure module's logger
+    logging.basicConfig()
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
@@ -112,12 +113,7 @@ def setup_logging(log_file="download_process.log"):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # Remove previous basic config
-    for handler in logging.getLogger().handlers[:]:
-        logging.getLogger().removeHandler(handler)
-
     return logger
-
 
 def initialize_earth_engine(logger):
     """
@@ -142,7 +138,6 @@ def initialize_earth_engine(logger):
             project="ee-magzoumov",
         )
         logger.info("Earth Engine initialized after authentication")
-
 
 def shapely2ee(geometry):
     """
@@ -560,7 +555,7 @@ def filter_and_save_valid_parcels(df, input_folder, output_path, logger):
     valid_indices = []
     for i in range(len(df)):
         idx = df.iloc[i]["ID_PARCEL"]
-        if (input_folder / f"{idx // 5000}/{idx}.npy").exists():
+        if (input_folder / f"{int(idx) // 5000}/{idx}.npy").exists():
             valid_indices.append(i)
 
     df = df.iloc[valid_indices].reset_index(drop=True)
@@ -603,7 +598,7 @@ def create_memmap(df, input_folder, output_folder, logger):
     # Function to get array by index
     def get_array(i):
         idx = df.iloc[i]["ID_PARCEL"]
-        return np.load(input_folder / f"{idx // 5000}/{idx}.npy")
+        return np.load(input_folder / f"{int(idx) // 5000}/{idx}.npy")
 
     # Create memory-mapped array from generator
     from tqdm.autonotebook import tqdm
@@ -621,7 +616,6 @@ def create_memmap(df, input_folder, output_folder, logger):
 
     return memmap
 
-
 def main():
     """Main function to execute the download and processing pipeline."""
     # Setup logging
@@ -629,7 +623,6 @@ def main():
 
     # Initialize Earth Engine
     initialize_earth_engine(logger)
-
     # Define paths - using sample parquet file
     current_dir = Path(".")
     sample_parquet = current_dir / "sample_agricultural_parcels_10k.parquet"

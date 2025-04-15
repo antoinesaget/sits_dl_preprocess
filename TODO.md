@@ -1,0 +1,2 @@
+- give the google earth engine project in args
+- 

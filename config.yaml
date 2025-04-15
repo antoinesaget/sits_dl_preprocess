@@ -1,0 +1,47 @@
+default:
+  start: 2022-01-01
+  end: 2022-12-31
+  collection: COPERNICUS/S2_SR_HARMONIZED
+  scale: 10
+  columns_types:
+    SCL: category
+    MSK_CLDPRB: int8
+    B1: int16
+    B2: int16
+    B3: int16
+    B4: int16
+    B5: int16
+    B6: int16
+    B7: int16
+    B8: int16
+    B8A: int16
+    B9: int16
+    B11: int16
+    B12: int16
+  steps: 64
+  area_min: 0.1  # Minimum parcel area in hectares
+  area_max: 40  # Maximum parcel area in hectares
+bands:
+  radiometric_bands:
+  - B1
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7
+  - B8
+  - B8A
+  - B9
+  - B11
+  - B12
+  misc_bands:
+  - AOT
+  - WVP
+  - SCL
+  - TCI_R
+  - TCI_G
+  - TCI_B
+  - MSK_CLDPRB
+  - MSK_SNWPRB
+  - QA60

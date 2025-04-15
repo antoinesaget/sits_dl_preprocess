@@ -129,7 +129,7 @@ def initialize_earth_engine(logger):
     try:
         ee.Initialize(
             opt_url="https://earthengine-highvolume.googleapis.com",
-            project="ee-antoinesaget",
+            project="ee-magzoumov",
         )
         logger.info("Earth Engine initialized successfully")
     except Exception as e:
@@ -139,7 +139,7 @@ def initialize_earth_engine(logger):
         ee.Authenticate()
         ee.Initialize(
             opt_url="https://earthengine-highvolume.googleapis.com",
-            project="ee-antoinesaget",
+            project="ee-magzoumov",
         )
         logger.info("Earth Engine initialized after authentication")
 

@@ -1,0 +1,5 @@
+/processed_arrays/
+/out_memmap/
+/filtered/
+*.log
+.DS_Store

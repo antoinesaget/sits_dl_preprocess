@@ -1,5 +1,6 @@
 /processed_arrays/
 /out_memmap/
 /filtered/
+polygons_processed.*
 *.log
 .DS_Store

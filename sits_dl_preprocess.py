@@ -113,8 +113,12 @@ def setup_logging(log_file="download_process.log"):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    return logger
+    # Remove previous basic config
+    for handler in logging.getLogger().handlers[:]:
+        logging.getLogger().removeHandler(handler)
 
+    return logger
+'''
 def initialize_earth_engine(logger):
     """
     Initialize Google Earth Engine with authentication if needed.
@@ -615,12 +619,12 @@ def create_memmap(df, input_folder, output_folder, logger):
     logger.info(f"Memmap conversion completed. Final shape: {memmap.shape}")
 
     return memmap
-
+'''
 def main():
     """Main function to execute the download and processing pipeline."""
     # Setup logging
     logger = setup_logging()
-
+'''
     # Initialize Earth Engine
     initialize_earth_engine(logger)
     # Define paths - using sample parquet file
@@ -665,6 +669,6 @@ def main():
 
     logger.info("Processing pipeline completed successfully")
 
-
+'''
 if __name__ == "__main__":
     main()

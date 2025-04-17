@@ -14,16 +14,15 @@ import os
 import numpy as np
 import pandas as pd
 
-from main import ALL_BANDS, RADIOMETRIC_BANDS
-
 class DataProcessor:
 
-    def __init__(self, data, logger):
-        self.data = data
+    def __init__(self, logger, all_bands, radiometric_bands):
+        self.all_bands = all_bands
+        self.radiometric_bands = radiometric_bands
         self.logger = logger
         pass
         
-    def parse(pixels, columns_types):
+    def parse(self, pixels, columns_types):
         """
         Parse raw pixel data from Earth Engine into a DataFrame.
 
@@ -43,8 +42,8 @@ class DataProcessor:
             dataframe = dataframe[dataframe["TILE"] == tile]
 
         # Select and process columns
-        dataframe = dataframe[["id", "longitude", "latitude", "time"] + ALL_BANDS]
-        dataframe[ALL_BANDS] = dataframe[ALL_BANDS].astype(float)
+        dataframe = dataframe[["id", "longitude", "latitude", "time"] + self.all_bands]
+        dataframe[self.all_bands] = dataframe[self.all_bands].astype(float)
         dataframe.reset_index(drop=True, inplace=True)
         dataframe.fillna(-1, inplace=True)
 
@@ -55,8 +54,7 @@ class DataProcessor:
 
         return dataframe.reset_index(drop=True)
 
-
-    def get_time_windows(start_date, end_date, steps):
+    def get_time_windows(self, start_date, end_date, steps):
         """
         Split a time range into smaller windows.
 
@@ -114,7 +112,7 @@ class DataProcessor:
         df = df.loc[ids]
 
         # Keep only needed bands and add NDVI
-        df = df[RADIOMETRIC_BANDS + ["MSK_CLDPRB", "SCL"]]
+        df = df[self.radiometric_bands + ["MSK_CLDPRB", "SCL"]]
         df["NDVI"] = (df["B8"] - df["B4"]) / (df["B8"] + df["B4"])
 
         # Clean data: remove invalid values, cloudy pixels, and poor quality data
@@ -127,11 +125,11 @@ class DataProcessor:
         df = df.reset_index(level=1)
 
         # Convert types and interpolate missing values
-        df[RADIOMETRIC_BANDS + ["NDVI"]] = df[RADIOMETRIC_BANDS + ["NDVI"]].astype(
+        df[self.radiometric_bands + ["NDVI"]] = df[self.radiometric_bands + ["NDVI"]].astype(
             "float64"
         )
         df = df.groupby(level=0, group_keys=True)[
-            RADIOMETRIC_BANDS + ["NDVI"] + ["doa"]
+            self.radiometric_bands + ["NDVI"] + ["doa"]
         ].apply(
             lambda x: (
                 x.set_index("doa")
@@ -152,7 +150,7 @@ class DataProcessor:
         df = df.reset_index()
         df["ID_TS"] = df["ID_TS"].astype("int16")
         df["ID_RPG"] = df["ID_RPG"].astype("int32")
-        df[RADIOMETRIC_BANDS] = df[RADIOMETRIC_BANDS].astype("int16")
+        df[self.radiometric_bands] = df[self.radiometric_bands].astype("int16")
         df["NDVI"] = df["NDVI"].astype("float64")
 
         # Verify final shape
@@ -164,7 +162,7 @@ class DataProcessor:
             return None
 
         # Return as reshaped numpy array: 100 points x 60 dates x 12 bands
-        return df[RADIOMETRIC_BANDS].to_numpy().reshape(100, 60, 12)
+        return df[self.radiometric_bands].to_numpy().reshape(100, 60, 12)
 
     def download_and_process_worker(self, args, config, outfolder, dates, ee_client):
         """
@@ -191,7 +189,7 @@ class DataProcessor:
 
             # Download data
             region = ee_client.shapely2ee(row["geometry"])
-            raw_df = ee_client.retrieve_data(region, row, config)
+            raw_df = ee_client.retrieve_data(region, row, config, self)
 
             # Process data
             processed_array = self.process_dataframe(raw_df, dates, int(index))
@@ -223,7 +221,7 @@ class DataProcessor:
         """
         return self.download_and_process_worker(args, config, outfolder, dates, ee_client)
 
-    def process_parcels(self, df, config, outfolder, dates, n_workers=60, ee_client=None):
+    def process_parcels(self, df, config, outfolder, dates, ee_client=None, n_workers=60):
         """
         Process parcels in parallel.
 
@@ -256,7 +254,7 @@ class DataProcessor:
         import functools
 
         worker_func = functools.partial(
-            self.worker_wrapper, config=config, outfolder=outfolder, dates=dates, logger=self.logger, ee_client=ee_client
+            self.worker_wrapper, config=config, outfolder=outfolder, dates=dates, ee_client=ee_client
         )
 
         try:
@@ -274,7 +272,7 @@ class DataProcessor:
             pool.close()
             pool.join()
 
-    def filter_by_area(df, area_min, area_max):
+    def filter_by_area(self, df, area_min, area_max):
         """
         Filter parcels by area in hectares.
 

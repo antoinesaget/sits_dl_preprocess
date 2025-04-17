@@ -5,11 +5,10 @@ import ee
 import time
 import pandas as pd
 
-from main import ALL_BANDS
-
 class EarthEngineClient:
     
-    def __init__(self, logger):
+    def __init__(self, logger, all_bands):
+        self.all_bands = all_bands
         self.logger = logger
         self.initialize_earth_engine()
         self.logger.info("Earth Engine client initialized")
@@ -38,7 +37,7 @@ class EarthEngineClient:
             )
             self.logger.info("Earth Engine initialized after authentication")
 
-    def shapely2ee(geometry):
+    def shapely2ee(self, geometry):
         """
         Convert Shapely geometry to Earth Engine geometry.
 
@@ -51,7 +50,7 @@ class EarthEngineClient:
         pt_list = list(zip(*geometry.exterior.coords.xy))
         return ee.Geometry.Polygon(pt_list)
 
-    def query(region, start, end, collection, scale):
+    def query(self, region, start, end, collection, scale):
         """
         Query Earth Engine for satellite imagery.
 
@@ -70,7 +69,7 @@ class EarthEngineClient:
             .filterDate(start, end)
             .filterBounds(region)
             .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
-            .select(ALL_BANDS)
+            .select(self.all_bands)
         )
 
         sampled_points = ee.FeatureCollection.randomPoints(
@@ -79,7 +78,7 @@ class EarthEngineClient:
 
         return images.getRegion(sampled_points, scale).getInfo()
 
-    def retrieve_data(self, region, row, config):
+    def retrieve_data(self, region, row, config, processor):
         """
         Retrieve satellite data from Earth Engine with automatic retry for large areas.
 
@@ -102,7 +101,6 @@ class EarthEngineClient:
                 break
 
             try:
-                processor = DataProcessor(self.logger)
                 if retry:
                     # Try with smaller time windows
                     starts, ends = processor.get_time_windows(config["start"], config["end"], steps)

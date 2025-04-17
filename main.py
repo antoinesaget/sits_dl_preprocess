@@ -70,7 +70,8 @@ def main():
     logger = setup_logging()
 
     # Initialize Earth Engine
-    ee_client = EarthEngineClient(logger, ALL_BANDS)
+    ee_client = EarthEngineClient()
+    ee_client.initialize_earth_engine(logger)
 
     # Define paths - using sample parquet file
     current_dir = Path(".")
@@ -91,7 +92,7 @@ def main():
     logger.info("Loading parcel data from sample file")
     df = gpd.read_parquet(sample_parquet).reset_index()
 
-    processor = DataProcessor(logger, ALL_BANDS, RADIOMETRIC_BANDS)
+    processor = DataProcessor()
     # Filter by area
     logger.info("Filtering parcels by area")
     df = processor.filter_by_area(df, DEFAULT_CONFIG["area_min"], DEFAULT_CONFIG["area_max"])
@@ -106,9 +107,9 @@ def main():
     df = df.to_crs("epsg:4326")
 
     # Process parcels
-    processor.process_parcels(df, DEFAULT_CONFIG, processed_arrays_folder, dates, ee_client)
+    processor.process_parcels(df, DEFAULT_CONFIG, processed_arrays_folder, dates, logger, ee_client, RADIOMETRIC_BANDS, ALL_BANDS)
 
-    file_manager = FileManager(logger)
+    file_manager = FileManager()
     # Filter and save valid parcels
     df = file_manager.filter_and_save_valid_parcels(df, processed_arrays_folder, current_dir)
 

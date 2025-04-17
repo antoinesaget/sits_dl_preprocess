@@ -6,11 +6,10 @@ import numpy as np
 
 class FileManager:
 
-    def __init__(self, logger):
-        self.logger = logger
+    def __init__(self):
         pass
 
-    def filter_and_save_valid_parcels(self, df, input_folder, output_path):
+    def filter_and_save_valid_parcels(self, df, input_folder, output_path, logger):
         """
         Filter parcels to keep only those with valid processed files.
 
@@ -23,7 +22,7 @@ class FileManager:
         Returns:
             GeoDataFrame: Filtered parcels
         """
-        self.logger.info("Starting validation")
+        logger.info("Starting validation")
 
         valid_indices = []
         for i in range(len(df)):
@@ -32,13 +31,13 @@ class FileManager:
                 valid_indices.append(i)
 
         df = df.iloc[valid_indices].reset_index(drop=True)
-        self.logger.info(f"Filtered to {len(df)} rows with existing .npy files")
+        logger.info(f"Filtered to {len(df)} rows with existing .npy files")
 
         # Save filtered dataset
         shapefile_path = output_path / "polygons_processed.shp"
         parquet_path = output_path / "polygons_processed.parquet"
 
-        self.logger.info(f"Saving processed parcels to {shapefile_path} and {parquet_path}")
+        logger.info(f"Saving processed parcels to {shapefile_path} and {parquet_path}")
 
         # Ensure output directory exists
         os.makedirs(output_path, exist_ok=True)
@@ -49,7 +48,7 @@ class FileManager:
 
         return df
 
-    def create_memmap(self, df, input_folder, output_folder):
+    def create_memmap(self, df, input_folder, output_folder, logger):
         """
         Convert individual .npy files to a memory-mapped array.
 
@@ -62,7 +61,7 @@ class FileManager:
         Returns:
             mmap_ninja.NpMemmap: Memory-mapped array
         """
-        self.logger.info("Starting memmap conversion")
+        logger.info("Starting memmap conversion")
 
         # Ensure output directory exists
         os.makedirs(output_folder, exist_ok=True)
@@ -75,7 +74,7 @@ class FileManager:
         # Create memory-mapped array from generator
         from tqdm.autonotebook import tqdm
 
-        self.logger.info(f"Creating memory-mapped array from {len(df)} parcels")
+        logger.info(f"Creating memory-mapped array from {len(df)} parcels")
         mmap_ninja.np_from_generator(
             out_dir=output_folder,
             sample_generator=map(get_array, tqdm(range(len(df)))),
@@ -84,6 +83,6 @@ class FileManager:
 
         # Open and verify the created memory-mapped array
         memmap = mmap_ninja.np_open_existing(output_folder)
-        self.logger.info(f"Memmap conversion completed. Final shape: {memmap.shape}")
+        logger.info(f"Memmap conversion completed. Final shape: {memmap.shape}")
 
         return memmap

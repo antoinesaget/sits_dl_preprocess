@@ -16,13 +16,10 @@ import pandas as pd
 
 class DataProcessor:
 
-    def __init__(self, logger, all_bands, radiometric_bands):
-        self.all_bands = all_bands
-        self.radiometric_bands = radiometric_bands
-        self.logger = logger
+    def __init__(self):
         pass
         
-    def parse(self, pixels, columns_types):
+    def parse(self, pixels, columns_types, all_bands):
         """
         Parse raw pixel data from Earth Engine into a DataFrame.
 
@@ -42,8 +39,8 @@ class DataProcessor:
             dataframe = dataframe[dataframe["TILE"] == tile]
 
         # Select and process columns
-        dataframe = dataframe[["id", "longitude", "latitude", "time"] + self.all_bands]
-        dataframe[self.all_bands] = dataframe[self.all_bands].astype(float)
+        dataframe = dataframe[["id", "longitude", "latitude", "time"] + all_bands]
+        dataframe[all_bands] = dataframe[all_bands].astype(float)
         dataframe.reset_index(drop=True, inplace=True)
         dataframe.fillna(-1, inplace=True)
 
@@ -76,7 +73,7 @@ class DataProcessor:
 
         return starts, ends
 
-    def process_dataframe(self, df, dates, parcel_id):
+    def process_dataframe(self, df, dates, parcel_id, logger, radiometric_bands):
         """
         Process the downloaded dataframe into the final array format.
 
@@ -90,13 +87,13 @@ class DataProcessor:
             numpy.ndarray: Processed array or None if processing failed
         """
         if len(df) == 0:
-            self.logger.error(f"Empty dataframe received for parcel {parcel_id}")
+            logger.error(f"Empty dataframe received for parcel {parcel_id}")
             return None
 
         # Calculate number of unique points
         n_points = df.groupby(["longitude", "latitude"]).ngroup().nunique()
         if n_points < 100:
-            self.logger.error(
+            logger.error(
                 f"Insufficient unique points ({n_points}/100) for parcel {parcel_id}"
             )
             return None
@@ -112,7 +109,7 @@ class DataProcessor:
         df = df.loc[ids]
 
         # Keep only needed bands and add NDVI
-        df = df[self.radiometric_bands + ["MSK_CLDPRB", "SCL"]]
+        df = df[radiometric_bands + ["MSK_CLDPRB", "SCL"]]
         df["NDVI"] = (df["B8"] - df["B4"]) / (df["B8"] + df["B4"])
 
         # Clean data: remove invalid values, cloudy pixels, and poor quality data
@@ -125,11 +122,11 @@ class DataProcessor:
         df = df.reset_index(level=1)
 
         # Convert types and interpolate missing values
-        df[self.radiometric_bands + ["NDVI"]] = df[self.radiometric_bands + ["NDVI"]].astype(
+        df[radiometric_bands + ["NDVI"]] = df[radiometric_bands + ["NDVI"]].astype(
             "float64"
         )
         df = df.groupby(level=0, group_keys=True)[
-            self.radiometric_bands + ["NDVI"] + ["doa"]
+            radiometric_bands + ["NDVI"] + ["doa"]
         ].apply(
             lambda x: (
                 x.set_index("doa")
@@ -150,21 +147,21 @@ class DataProcessor:
         df = df.reset_index()
         df["ID_TS"] = df["ID_TS"].astype("int16")
         df["ID_RPG"] = df["ID_RPG"].astype("int32")
-        df[self.radiometric_bands] = df[self.radiometric_bands].astype("int16")
+        df[radiometric_bands] = df[radiometric_bands].astype("int16")
         df["NDVI"] = df["NDVI"].astype("float64")
 
         # Verify final shape
         expected_rows = 6000  # 100 timeseries * 60 dates
         if len(df) != expected_rows:
-            self.logger.error(
+            logger.error(
                 f"Final shape mismatch for parcel {parcel_id}. Expected {expected_rows}, got {len(df)}"
             )
             return None
 
         # Return as reshaped numpy array: 100 points x 60 dates x 12 bands
-        return df[self.radiometric_bands].to_numpy().reshape(100, 60, 12)
+        return df[radiometric_bands].to_numpy().reshape(100, 60, 12)
 
-    def download_and_process_worker(self, args, config, outfolder, dates, ee_client):
+    def download_and_process_worker(self, args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client):
         """
         Worker function for parallel processing of parcels.
 
@@ -182,19 +179,19 @@ class DataProcessor:
         try:
             outfile = outfolder / f"{int(index) // 5000}/{index}.npy"
             if outfile.exists():
-                self.logger.debug(
+                logger.debug(
                     f"File for parcel {row['ID_PARCEL']} already exists. Skipping..."
                 )
                 return True
 
             # Download data
             region = ee_client.shapely2ee(row["geometry"])
-            raw_df = ee_client.retrieve_data(region, row, config, self)
+            raw_df = ee_client.retrieve_data(region, row, config, logger, self, all_bands)
 
             # Process data
-            processed_array = self.process_dataframe(raw_df, dates, int(index))
+            processed_array = self.process_dataframe(raw_df, dates, int(index), logger, radiometric_bands)
             if processed_array is None:
-                self.logger.error(f"Processing failed for parcel {row['ID_PARCEL']}")
+                logger.error(f"Processing failed for parcel {row['ID_PARCEL']}")
                 return False
             else:
                 os.makedirs(os.path.dirname(outfile), exist_ok=True)
@@ -202,10 +199,10 @@ class DataProcessor:
                 return True
 
         except Exception as e:
-            self.logger.error(f"Error processing parcel {index}: {e}")
+            logger.error(f"Error processing parcel {index}: {e}")
             return False
 
-    def worker_wrapper(self, args, config, outfolder, dates, ee_client):
+    def worker_wrapper(self, args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client):
         """
         Wrapper around download_and_process_worker that unpacks arguments for multiprocessing.
 
@@ -219,9 +216,9 @@ class DataProcessor:
         Returns:
             bool: True if processing was successful, False otherwise
         """
-        return self.download_and_process_worker(args, config, outfolder, dates, ee_client)
+        return self.download_and_process_worker(args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client)
 
-    def process_parcels(self, df, config, outfolder, dates, ee_client=None, n_workers=60):
+    def process_parcels(self, df, config, outfolder, dates, logger, ee_client, radiometric_bands, all_bands, n_workers=60):
         """
         Process parcels in parallel.
 
@@ -248,13 +245,13 @@ class DataProcessor:
             TimeRemainingColumn(),
         )
 
-        self.logger.info(f"Starting processing of {len(df)} parcels with {n_workers} workers")
+        logger.info(f"Starting processing of {len(df)} parcels with {n_workers} workers")
 
         # Use functools.partial to create a function with fixed arguments except the first one
         import functools
 
         worker_func = functools.partial(
-            self.worker_wrapper, config=config, outfolder=outfolder, dates=dates, ee_client=ee_client
+            self.worker_wrapper, config=config, outfolder=outfolder, dates=dates, logger=logger, radiometric_bands=radiometric_bands, all_bands=all_bands, ee_client=ee_client
         )
 
         try:
@@ -265,7 +262,7 @@ class DataProcessor:
         except AttributeError as e:
             if "'NoneType' object has no attribute 'dumps'" in str(e):
                 # This error occurs during Pool cleanup and can be safely ignored
-                self.logger.info("Ignoring Pool cleanup AttributeError")
+                logger.info("Ignoring Pool cleanup AttributeError")
             else:
                 raise
         finally:

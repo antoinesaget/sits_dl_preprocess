@@ -1,6 +1,6 @@
 default:
-  start: 2022-01-01
-  end: 2022-12-31
+  start: "2022-01-01"
+  end: "2022-12-31"
   collection: COPERNICUS/S2_SR_HARMONIZED
   scale: 10
   columns_types:

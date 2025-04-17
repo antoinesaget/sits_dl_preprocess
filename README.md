@@ -38,7 +38,7 @@ The main script `sits_dl_preprocess.py` performs the following operations:
 
 2. Create and activate the conda environment:
    ```
-   conda env create -f environment.yml
+   conda env create -f environment.yaml
    conda activate sits_dl
    ```
 

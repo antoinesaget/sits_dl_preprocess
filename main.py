@@ -16,7 +16,7 @@ import yaml
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
-from file_operations import FileManager, create_memmap, filter_and_save_valid_parcels
+from file_operations import FileManager
 
 with open("config.yaml", "r") as config_file:
     config = yaml.safe_load(config_file)

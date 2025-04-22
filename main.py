@@ -14,6 +14,8 @@ import pandas as pd
 from pathlib import Path
 import yaml
 import argparse
+import mmap_ninja
+import numpy as np
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
@@ -132,7 +134,10 @@ def main():
 
     # Create memory-mapped array
     logger.info(f"Creating memory-mapped array into {memmap_folder}")
-    file_manager.create_memmap(df, processed_arrays_folder, memmap_folder, logger)
+    memmap = file_manager.create_memmap(df, processed_arrays_folder, memmap_folder, logger)
+
+    print("Sample data from memory-mapped array:")
+    print(memmap[:2, :5, :3])
 
     logger.info("Processing pipeline completed successfully")
 

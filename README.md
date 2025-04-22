@@ -4,7 +4,7 @@ This repository contains a data processing pipeline designed to download Sentine
 
 ## Overview
 
-The main script `sits_dl_preprocess.py` performs the following operations:
+The main script `main.py` performs the following operations:
 
 1. Downloads Sentinel-2 satellite imagery from Google Earth Engine using the Earth Engine API
 2. Processes and filters the imagery data
@@ -20,13 +20,15 @@ The main script `sits_dl_preprocess.py` performs the following operations:
 - NumPy (`numpy`)
 - Pandas (`pandas`)
 - mmap-ninja (`mmap_ninja`)
+- Pyyaml (`yaml`)
+- Argparse (`argparse`)
 - Rich (`rich`) for progress tracking
 - tqdm for progress visualization
 
 ### Authentication
 
 - Google Earth Engine account with authentication set up
-- The script uses the project `ee-antoinesaget` - you may need to modify this for your own use
+- The script uses the project `ee-antoinesaget` - you need to modify it to use your own earth engine project
 
 ## Installation
 
@@ -36,23 +38,39 @@ The main script `sits_dl_preprocess.py` performs the following operations:
    cd <repository-directory>
    ```
 
-2. Create and activate the conda environment:
+2. Install conda:
+   Download Anaconda from https://www.anaconda.com/download/success
+   Give the downloaded file execution rights and execute it:
+   ```
+   chmod +x /path/to/the/script/SCRIPT_NAME.sh
+   bash SCRIPT_NAME.sh -b
+   ```
+   Finally, to enable conda, execute:
+   ```
+   source $HOME/anaconda3/bin/activate
+   ```
+
+3. After enabling conda, create and activate the conda environment (creating the environment is only needed once, the next time you will just need to do conda activate sits_dl):
    ```
    conda env create -f environment.yaml
    conda activate sits_dl
    ```
 
-3. Set up Earth Engine authentication:
+4. Set up Earth Engine authentication:
    ```
    earthengine authenticate
    ```
 
 ## Usage
 
-The main script can be executed directly:
+The main script can be executed directly (after activating the conda environment sits_dl created previously):
 
 ```
-python sits_dl_preprocess.py
+python main.py
+```
+or
+```
+python3 main.py
 ```
 
 ### Configuration
@@ -145,4 +163,4 @@ To contribute to this project:
 
 ## License
 
-[TODO]
+This project is open source and available under the MIT License.

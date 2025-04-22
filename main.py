@@ -86,7 +86,7 @@ def main():
     parser.add_argument("--sample_parquet", default=DEFAULT_DIRECTORY_PATHS["sample_parquet"], help="Path to sample parquet file")
     parser.add_argument("--processed_arrays_folder", default=DEFAULT_DIRECTORY_PATHS["processed_arrays_folder"], help="Folder for processed arrays")
     parser.add_argument("--memmap_folder", default=DEFAULT_DIRECTORY_PATHS["memmap_folder"], help="Folder for memory-mapped arrays")
-    parser.add_argument("--filtered_folder", default=DEFAULT_DIRECTORY_PATHS["filtered_folder"], help="Folder for filtered shapefiles folder")
+    parser.add_argument("--filtered_folder", default=DEFAULT_DIRECTORY_PATHS["filtered_folder"], help="Folder for filtered shapefiles")
     parser.add_argument("--filtered_shp_path", default=DEFAULT_DIRECTORY_PATHS["filtered_shp_path"], help="Path to filtered shapefile")
     args = parser.parse_args()
 

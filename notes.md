@@ -25,7 +25,7 @@ Il y a eu quelques erreurs avec la création des modules, puis des classes:
 ### Etape 2: Gestion de la configuration
 J'ai changé l'extension du fichier environnement de yml à yaml: il n'y a pas de différence fonctionnelle, mais c'est l'extension recommendée officiellement ([faq yaml](https://yaml.org/faq.html))
 
-Ensuite, j'ai séparé le code des données de configuration, que j'ai ajouté dans config.yaml. Pour récuperer ces données ensuite, on import pyyaml (que j'ai par ailleurs ajouté dans le environnement.yaml), puis on lit le contenu du fichier et le met dans config avec
+Ensuite, j'ai séparé le code des données de configuration, que j'ai ajouté dans config.yaml. Pour récuperer ces données ensuite, on import yaml (et j'ai ajouté pyyaml dans le environnement.yaml), puis on lit le contenu du fichier et le met dans config avec
 ```
 config = yaml.safe_load(config_file)
 ```

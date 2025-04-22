@@ -1,4 +1,4 @@
-- [ ] Tester le code avec différentes dates, différents modèles, différents bands
+- [ ] Tester le code avec différentes dates, différents modèles, différents bands, différents models
 - [ ] Trouver comment manipuler les constantes (paramètres de configuration): les passer en argument comme maintenant, les relire, autre chose?
 - [ ] Trouver quels arguments devraient être passés en ligne de commande, et lesquels devraient être récupérés à travers config.yaml
 - [ ] Optimiser les arguments des méthodes: au lieu de passer le même plusieurs fois, le passer une fois au constructeur

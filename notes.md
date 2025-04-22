@@ -9,7 +9,7 @@ filter_by_area
 - file_operations: filter_and_save_valid_parcels, create_memmap
 - earth_engine: initialize_earth_engine, shapely2ee, query, retrieve_data
 
-Puis, pour chaque module (autres que main), j'ai crée une classe:
+Puis, pour chaque module (main exclu), j'ai crée une classe:
 
 - data_processing: DataProcessor
 - file_operations: FileManager

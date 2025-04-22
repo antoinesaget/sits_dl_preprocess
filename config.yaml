@@ -45,3 +45,10 @@ bands:
   - MSK_CLDPRB
   - MSK_SNWPRB
   - QA60
+paths:
+  current_dir: "." # Current working directory
+  sample_parquet: "sample_agricultural_parcels_10k.parquet" # Path to the sample parquet file
+  processed_arrays_folder: "processed_arrays" # Folder to save processed arrays
+  memmap_folder: "out_memmap" # Folder to save memmap arrays
+  filtered_folder: "filtered" # Folder to save filtered arrays
+  filtered_shp_path: "filtered/polygons_filtered.shp" # Path to the filtered shapefile

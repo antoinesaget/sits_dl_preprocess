@@ -12,6 +12,7 @@ dependencies:
   - pyarrow
   - pip
   - pyyaml
+  - argparse
   - pip:
     - mmap-ninja
     - earthengine-api 

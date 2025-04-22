@@ -13,6 +13,7 @@ import geopandas as gpd
 import pandas as pd
 from pathlib import Path
 import yaml
+import argparse
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
@@ -28,6 +29,8 @@ ALL_BANDS = RADIOMETRIC_BANDS + MISC_BANDS
 
 # Default configuration
 DEFAULT_CONFIG = config["default"]
+DEFAULT_DIRECTORY_PATHS = config["paths"]
+
 
 def setup_logging(log_file="download_process.log"):
     """
@@ -66,19 +69,34 @@ def setup_logging(log_file="download_process.log"):
 
 def main():
     """Main function to execute the download and processing pipeline."""
+
     # Setup logging
     logger = setup_logging()
 
-    # Initialize Earth Engine
+    logger.info("Initializing classes")
+    # Initialize EarthEngineClient, DataProcessor, and FileManager classes
     ee_client = EarthEngineClient()
     ee_client.initialize_earth_engine(logger)
+    processor = DataProcessor()
+    file_manager = FileManager()
+
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Satellite imagery processing pipeline")
+    parser.add_argument("--current_dir", default=DEFAULT_DIRECTORY_PATHS["current_dir"], help="Base directory")
+    parser.add_argument("--sample_parquet", default=DEFAULT_DIRECTORY_PATHS["sample_parquet"], help="Path to sample parquet file")
+    parser.add_argument("--processed_arrays_folder", default=DEFAULT_DIRECTORY_PATHS["processed_arrays_folder"], help="Folder for processed arrays")
+    parser.add_argument("--memmap_folder", default=DEFAULT_DIRECTORY_PATHS["memmap_folder"], help="Folder for memory-mapped arrays")
+    parser.add_argument("--filtered_folder", default=DEFAULT_DIRECTORY_PATHS["filtered_folder"], help="Folder for filtered shapefiles folder")
+    parser.add_argument("--filtered_shp_path", default=DEFAULT_DIRECTORY_PATHS["filtered_shp_path"], help="Path to filtered shapefile")
+    args = parser.parse_args()
 
     # Define paths - using sample parquet file
-    current_dir = Path(".")
-    sample_parquet = current_dir / "sample_agricultural_parcels_10k.parquet"
-    processed_arrays_folder = current_dir / "processed_arrays"
-    memmap_folder = current_dir / "out_memmap"
-    filtered_folder = current_dir / "filtered"
+    current_dir = Path(args.current_dir)
+    sample_parquet = current_dir / args.sample_parquet
+    processed_arrays_folder = current_dir / args.processed_arrays_folder
+    memmap_folder = current_dir / args.memmap_folder
+    filtered_folder = current_dir / args.filtered_folder
+    filtered_shp_path = current_dir / args.filtered_shp_path
 
     # Create necessary directories
     os.makedirs(processed_arrays_folder, exist_ok=True)
@@ -92,14 +110,13 @@ def main():
     logger.info("Loading parcel data from sample file")
     df = gpd.read_parquet(sample_parquet).reset_index()
 
-    processor = DataProcessor()
+
     # Filter by area
     logger.info("Filtering parcels by area")
     df = processor.filter_by_area(df, DEFAULT_CONFIG["area_min"], DEFAULT_CONFIG["area_max"])
     print(df.head())
 
     # Save filtered shapefile
-    filtered_shp_path = filtered_folder / "polygons_filtered.shp"
     logger.info(f"Saving filtered parcels to {filtered_shp_path}")
     df.to_file(filtered_shp_path, driver="ESRI Shapefile")
 
@@ -109,12 +126,13 @@ def main():
     # Process parcels
     processor.process_parcels(df, DEFAULT_CONFIG, processed_arrays_folder, dates, logger, ee_client, RADIOMETRIC_BANDS, ALL_BANDS)
 
-    file_manager = FileManager()
     # Filter and save valid parcels
-    df = file_manager.filter_and_save_valid_parcels(df, processed_arrays_folder, current_dir)
+    logger.info(f"Filtering and saving valid parcels to {processed_arrays_folder}")
+    df = file_manager.filter_and_save_valid_parcels(df, processed_arrays_folder, current_dir, logger)
 
     # Create memory-mapped array
-    file_manager.create_memmap(df, processed_arrays_folder, memmap_folder)
+    logger.info(f"Creating memory-mapped array into {memmap_folder}")
+    file_manager.create_memmap(df, processed_arrays_folder, memmap_folder, logger)
 
     logger.info("Processing pipeline completed successfully")
 

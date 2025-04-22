@@ -30,3 +30,5 @@ Ensuite, j'ai séparé le code des données de configuration, que j'ai ajouté d
 config = yaml.safe_load(config_file)
 ```
 Par la même occasion, j'ai ajouté les bands dans config.yaml, ce qui facilite leur modification éventuelle.
+
+Pour la définiton des dossiers et chemins jusqu'aux fichiers utilisés, qui étaitent initialement contenue dans le main, j'ai utilisé la librairie argparse, qui me permet de recevoir des arguments au moment de l'execution, et de définir des valeurs par défaut. Par ailleurs, j'ai stocké les valeurs par défaut dans le config.yaml: on peut donc soit modifier ce fichier directement pour changer les dossiers et fichiers utilisés, ou les renter en paramètres au moment de l'execution du main.

@@ -16,7 +16,8 @@ import pandas as pd
 
 class DataProcessor:
 
-    def __init__(self):
+    def __init__(self, DEFAULT_CONFIG):
+        self.DEFAULT_CONFIG = DEFAULT_CONFIG
         pass
         
     def parse(self, pixels, columns_types, all_bands):
@@ -132,14 +133,14 @@ class DataProcessor:
                 x.set_index("doa")
                 .reindex(dates)
                 .interpolate(method="linear", limit_direction="both")
-                .iloc[::5, :]  # Sample every 5th date
+                .iloc[::self.DEFAULT_CONFIG["days_interval"], :]  # Sample every 5th date
             )
         )
 
         # Filter to desired date range
         df = df[
-            (df.index.get_level_values(1) >= "2022-02-01")
-            & (df.index.get_level_values(1) <= "2022-11-30")
+            (df.index.get_level_values(1) >= self.DEFAULT_CONFIG["filter_start"])
+            & (df.index.get_level_values(1) <= self.DEFAULT_CONFIG["filter_end"])
         ]
 
         # Add ID_RPG and convert types
@@ -151,7 +152,11 @@ class DataProcessor:
         df["NDVI"] = df["NDVI"].astype("float64")
 
         # Verify final shape
-        expected_rows = 6000  # 100 timeseries * 60 dates
+        filter_start = datetime.strptime(self.DEFAULT_CONFIG["filter_start"], "%Y-%m-%d").date()
+        filter_end = datetime.strptime(self.DEFAULT_CONFIG["filter_end"], "%Y-%m-%d").date()
+        diff = (filter_end - filter_start).days
+        dates = diff/self.DEFAULT_CONFIG["days_interval"] + 1
+        expected_rows = dates*100  # 100 timeseries * 60 dates
         if len(df) != expected_rows:
             logger.error(
                 f"Final shape mismatch for parcel {parcel_id}. Expected {expected_rows}, got {len(df)}"
@@ -159,7 +164,7 @@ class DataProcessor:
             return None
 
         # Return as reshaped numpy array: 100 points x 60 dates x 12 bands
-        return df[radiometric_bands].to_numpy().reshape(100, 60, 12)
+        return df[radiometric_bands].to_numpy().reshape(100, dates, len(radiometric_bands))
 
     def download_and_process_worker(self, args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client):
         """

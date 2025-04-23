@@ -39,16 +39,7 @@ The main script `main.py` performs the following operations:
    ```
 
 2. Install conda:
-   Download Anaconda from https://www.anaconda.com/download/success
-   Give the downloaded file execution rights and execute it:
-   ```
-   chmod +x /path/to/the/script/SCRIPT_NAME.sh
-   bash SCRIPT_NAME.sh -b
-   ```
-   Finally, to enable conda, execute:
-   ```
-   source $HOME/anaconda3/bin/activate
-   ```
+   You can download Anaconda from [here](https://www.anaconda.com/download/success)
 
 3. After enabling conda, create and activate the conda environment (creating the environment is only needed once, the next time you will just need to do conda activate sits_dl):
    ```
@@ -75,27 +66,39 @@ python3 main.py
 
 ### Configuration
 
-The script uses a default configuration defined in `DEFAULT_CONFIG`:
+The script uses a default configuration defined in [config.yaml](config.yaml):
 
-```python
-DEFAULT_CONFIG = {
-    'start': '2022-01-01',
-    'end': '2022-12-31',
-    'collection': 'COPERNICUS/S2_SR_HARMONIZED',
-    'scale': 10,
-    'columns_types': {
-        'SCL': 'category',
-        'MSK_CLDPRB': 'int8',
-        'B1': 'int16',
-        # ... other bands
-    },
-    'steps': 64,
-    'area_min': 0.1,  # Minimum parcel area in hectares
-    'area_max': 40,  # Maximum parcel area in hectares
-}
+```yaml
+default:
+  start: "2022-01-01" # Start date for the analysis, format YYYY-MM-DD
+  end: "2022-12-31" # End date for the analysis, format YYYY-MM-DD
+  collection: COPERNICUS/S2_SR_HARMONIZED
+  scale: 10
+  columns_types:
+    SCL: category
+    MSK_CLDPRB: int8
+    B1: int16
+    B2: int16
+    B3: int16
+    B4: int16
+    B5: int16
+    B6: int16
+    B7: int16
+    B8: int16
+    B8A: int16
+    B9: int16
+    B11: int16
+    B12: int16
+  steps: 64
+  area_min: 0.1  # Minimum parcel area in hectares
+  area_max: 40  # Maximum parcel area in hectares
+  filter_start: "2022-02-01" # Start date for filtering, format YYYY-MM-DD
+  filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
+  ee_project_name: "ee-magzoumov" # Earth Engine project name
+  days_interval: 5 # Sample every 5th date
 ```
 
-You can modify these parameters in the script before running it.
+You can modify these parameters before running the script.
 
 ### Input Data
 
@@ -114,9 +117,12 @@ The script produces:
 
 ## Project Structure
 
-- `sits_dl_preprocess.py`: Main script for downloading and processing satellite imagery
-- `sample_agricultural_parcels_10k.parquet`: Sample dataset containing agricultural parcels
-- `environment.yml`: Conda environment configuration
+- [`main.py`](main.py): Main script for downloading and processing satellite imagery
+- [`data_processing.py`](data_processing.py): Script containing the data processing methods
+- [`earth_engine.py`](earth_engine.py): Script containing methods used to interact with Google Earth Engine
+- [`file_operations.py`](file_operations.py): Script containing methods used to create and write data into files
+- [`sample_agricultural_parcels_10k.parquet`](sample_agricultural_parcels_10k.parquet): Sample dataset containing agricultural parcels
+- [`environment.yaml`](environment.yaml): Conda environment configuration
 - `processed_arrays/`: Directory containing individual processed NumPy arrays (created during execution)
 - `out_memmap/`: Directory containing memory-mapped arrays for efficient access (created during execution)
 

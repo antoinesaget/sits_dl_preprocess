@@ -10,7 +10,7 @@ class EarthEngineClient:
     def __init__(self):
         pass
 
-    def initialize_earth_engine(self, logger):
+    def initialize_earth_engine(self, logger, project_name):
         """
         Initialize Google Earth Engine with authentication if needed.
 
@@ -20,7 +20,7 @@ class EarthEngineClient:
         try:
             ee.Initialize(
                 opt_url="https://earthengine-highvolume.googleapis.com",
-                project="ee-magzoumov",
+                project=project_name,
             )
             logger.info("Earth Engine initialized successfully")
         except Exception as e:
@@ -30,7 +30,7 @@ class EarthEngineClient:
             ee.Authenticate()
             ee.Initialize(
                 opt_url="https://earthengine-highvolume.googleapis.com",
-                project="ee-magzoumov",
+                project=project_name,
             )
             logger.info("Earth Engine initialized after authentication")
 

@@ -1,6 +1,6 @@
 default:
-  start: "2022-01-01"
-  end: "2022-12-31"
+  start: "2022-01-01" # Start date for the analysis, format YYYY-MM-DD
+  end: "2022-12-31" # End date for the analysis, format YYYY-MM-DD
   collection: COPERNICUS/S2_SR_HARMONIZED
   scale: 10
   columns_types:
@@ -21,6 +21,10 @@ default:
   steps: 64
   area_min: 0.1  # Minimum parcel area in hectares
   area_max: 40  # Maximum parcel area in hectares
+  filter_start: "2022-02-01" # Start date for filtering, format YYYY-MM-DD
+  filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
+  ee_project_name: "ee-magzoumov" # Earth Engine project name
+  days_interval: 5 # Sample every 5th date
 bands:
   radiometric_bands:
   - B1

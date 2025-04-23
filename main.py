@@ -16,6 +16,7 @@ import yaml
 import argparse
 import mmap_ninja
 import numpy as np
+from datetime import datetime
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
@@ -69,20 +70,30 @@ def setup_logging(log_file="download_process.log"):
 
     return logger
 
-def main():
-    """Main function to execute the download and processing pipeline."""
+def validate_data():
+    # Parse dates into datetime objects
+    start = datetime.strptime(DEFAULT_CONFIG["start"], "%Y-%m-%d").date()
+    filter_start = datetime.strptime(DEFAULT_CONFIG["filter_start"], "%Y-%m-%d").date()
+    end = datetime.strptime(DEFAULT_CONFIG["end"], "%Y-%m-%d").date()
+    filter_end = datetime.strptime(DEFAULT_CONFIG["filter_end"], "%Y-%m-%d").date()
+    area_min = DEFAULT_CONFIG["area_min"]
+    area_max = DEFAULT_CONFIG["area_max"]
 
-    # Setup logging
-    logger = setup_logging()
-
-    logger.info("Initializing classes")
-    # Initialize EarthEngineClient, DataProcessor, and FileManager classes
-    ee_client = EarthEngineClient()
-    ee_client.initialize_earth_engine(logger)
-    processor = DataProcessor()
-    file_manager = FileManager()
-
-    # Parse command-line arguments
+    # Validate date ranges
+    if start > end:
+        raise ValueError("Start date must be earlier than end date.")
+    if filter_start > filter_end:
+        raise ValueError("Filter start date must be earlier than filter end date.")
+    if start > filter_start:
+        raise ValueError("Start date must be earlier or equal to the filter_start date.")
+    if end < filter_end:
+        raise ValueError("End date must be later or equal to the filter_end date.")
+    if (area_min < 0) or (area_max < 0):
+        raise ValueError("Area min and max must be non-negative.")
+    if area_min > area_max:
+        raise ValueError("Area min must be less than or equal to area max.")
+    
+def parse_arguments():
     parser = argparse.ArgumentParser(description="Satellite imagery processing pipeline")
     parser.add_argument("--current_dir", default=DEFAULT_DIRECTORY_PATHS["current_dir"], help="Base directory")
     parser.add_argument("--sample_parquet", default=DEFAULT_DIRECTORY_PATHS["sample_parquet"], help="Path to sample parquet file")
@@ -90,7 +101,27 @@ def main():
     parser.add_argument("--memmap_folder", default=DEFAULT_DIRECTORY_PATHS["memmap_folder"], help="Folder for memory-mapped arrays")
     parser.add_argument("--filtered_folder", default=DEFAULT_DIRECTORY_PATHS["filtered_folder"], help="Folder for filtered shapefiles")
     parser.add_argument("--filtered_shp_path", default=DEFAULT_DIRECTORY_PATHS["filtered_shp_path"], help="Path to filtered shapefile")
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    """Main function to execute the download and processing pipeline."""
+
+    # Parse command-line arguments
+    args = parse_arguments()
+
+    # Validate configuration data
+    validate_data()
+    
+    # Setup logging
+    logger = setup_logging()
+
+    logger.info("Initializing classes")
+    # Initialize EarthEngineClient, DataProcessor, and FileManager classes
+    ee_client = EarthEngineClient()
+    ee_client.initialize_earth_engine(logger, DEFAULT_CONFIG["ee_project_name"])
+    processor = DataProcessor()
+    file_manager = FileManager()
+
 
     # Define paths - using sample parquet file
     current_dir = Path(args.current_dir)

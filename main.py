@@ -149,7 +149,7 @@ def main():
     # Initialize EarthEngineClient, DataProcessor, and FileManager classes
     ee_client = EarthEngineClient()
     ee_client.initialize_earth_engine(logger, DEFAULT_CONFIG["ee_project_name"])
-    processor = DataProcessor()
+    processor = DataProcessor(DEFAULT_CONFIG)
     file_manager = FileManager()
 
     # Define paths - using sample parquet file

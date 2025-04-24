@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import datetime
 import multiprocessing
 import os
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -155,14 +155,14 @@ class DataProcessor:
         df["NDVI"] = df["NDVI"].astype("float64")
 
         # Verify final shape
-        filter_start = datetime.strptime(
+        filter_start = datetime.datetime.strptime(
             self.DEFAULT_CONFIG["filter_start"], "%Y-%m-%d"
         ).date()
-        filter_end = datetime.strptime(
+        filter_end = datetime.datetime.strptime(
             self.DEFAULT_CONFIG["filter_end"], "%Y-%m-%d"
         ).date()
         diff = (filter_end - filter_start).days
-        dates = diff / self.DEFAULT_CONFIG["days_interval"] + 1
+        dates = round(diff / self.DEFAULT_CONFIG["days_interval"])
         expected_rows = dates * 100  # 100 timeseries * 60 dates
         if len(df) != expected_rows:
             logger.error(

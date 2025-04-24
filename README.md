@@ -1,6 +1,7 @@
 # Satellite Imagery Download and Processing Pipeline
 
-This repository contains a data processing pipeline designed to download Sentinel-2 satellite imagery from Google Earth Engine, process it into a standardized format, and save it as memory-mapped arrays for efficient access. The pipeline is specifically designed for working with agricultural parcels in France.
+This repository contains a data processing pipeline designed to download Sentinel-2 satellite time series from Google Earth Engine, process it into a standardized format, and save it as memory-mapped arrays for efficient access. 
+It takes as input a parquet file containing polygons and outputs a memory-mapped array containing the downloaded and processed data for each polygon.
 
 ## Overview
 
@@ -11,9 +12,25 @@ The main script `main.py` performs the following operations:
 3. Converts processed data into NumPy arrays
 4. Organizes data into memory-mapped files for efficient access
 
-## Prerequisites
+## Installation
 
-### Required Packages
+### 1. Clone repository
+
+```
+git clone <repository-url>
+cd <repository-directory>
+```
+
+### 2. Create python environnement
+
+- Install conda/mamba from [here](https://github.com/conda-forge/miniforge)
+- Create and activate the conda environment (creating the environment is only needed once, the next time you will just need to do conda activate sits_dl):
+   ```
+   conda env create -f environment.yaml
+   conda activate sits_dl
+   ```
+
+**Dependencies:**
 
 - Earth Engine API (`ee`)
 - GeoPandas (`geopandas`)
@@ -25,32 +42,13 @@ The main script `main.py` performs the following operations:
 - Rich (`rich`) for progress tracking
 - tqdm for progress visualization
 
-### Authentication
 
-- Google Earth Engine account with authentication set up
+### 3. Authenticate with Earth Engine
+
+- You need a Google Earth Engine account with authentication set up
 - The script uses the project `ee-antoinesaget` - you need to modify it to use your own earth engine project
+- Authenticate : `earthengine authenticate`
 
-## Installation
-
-1. Clone this repository:
-   ```
-   git clone <repository-url>
-   cd <repository-directory>
-   ```
-
-2. Install conda:
-   You can download Anaconda from [here](https://www.anaconda.com/download/success)
-
-3. After enabling conda, create and activate the conda environment (creating the environment is only needed once, the next time you will just need to do conda activate sits_dl):
-   ```
-   conda env create -f environment.yaml
-   conda activate sits_dl
-   ```
-
-4. Set up Earth Engine authentication:
-   ```
-   earthengine authenticate
-   ```
 
 ## Usage
 
@@ -58,10 +56,6 @@ The main script can be executed directly (after activating the conda environment
 
 ```
 python main.py
-```
-or
-```
-python3 main.py
 ```
 
 ### Configuration
@@ -118,9 +112,9 @@ The script produces:
 ## Project Structure
 
 - [`main.py`](main.py): Main script for downloading and processing satellite imagery
-- [`data_processing.py`](data_processing.py): Script containing the data processing methods
-- [`earth_engine.py`](earth_engine.py): Script containing methods used to interact with Google Earth Engine
-- [`file_operations.py`](file_operations.py): Script containing methods used to create and write data into files
+- [`data_processing.py`](data_processing.py): data processing methods (cloud filtering, alignment, etc.)
+- [`earth_engine.py`](earth_engine.py): Earth Engine interaction methods (querying, downloading, etc.)
+- [`file_operations.py`](file_operations.py): file operations methods (saving, conversion to memory-mapped arrays)
 - [`sample_agricultural_parcels_10k.parquet`](sample_agricultural_parcels_10k.parquet): Sample dataset containing agricultural parcels
 - [`environment.yaml`](environment.yaml): Conda environment configuration
 - `processed_arrays/`: Directory containing individual processed NumPy arrays (created during execution)
@@ -128,34 +122,32 @@ The script produces:
 
 ## Areas for Improvement
 
-As an intern working on this codebase, here are some suggested areas for improvement:
+Suggested areas for improvement:
 
-1. **Code Structure**: Refactor the monolithic script into a modular package structure
+1. [x] **Code Structure**: Refactor the monolithic script into a modular package structure
    - Create separate modules for Earth Engine interactions, data processing, and file operations
    - Implement a proper class hierarchy
 
-2. **Configuration Management**: 
+2. [v] **Configuration Management**: 
    - Move configuration from hardcoded dictionary to external YAML/JSON config file
    - Add command-line argument parsing for flexible execution
 
-3. **Error Handling and Logging**:
+3. [ ] **Error Handling and Logging**:
    - Improve error handling with more specific exception catches
    - Enhance logging with more detailed progress information
    - Add data validation steps
 
-4. **Performance Optimization**:
+4. [ ] **Performance Optimization**:
    - Review parallel processing implementation
    - Optimize memory usage
 
-5. **Documentation**:
+5. [ ] **Documentation**:
    - Add in-line documentation following standard conventions
    - Add usage examples
 
-6. **User Interface**:
-   - Add a simple CLI interface
+6. [x] **User Interface**: add a simple CLI interface
 
-7. **Packaging**:
-   - Document dependencies properly
+7. [x] **Packaging**: document dependencies properly
 
 ## Contributing
 

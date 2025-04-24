@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import datetime
 import multiprocessing
 import os
-import datetime
 
 import numpy as np
 import pandas as pd
@@ -94,9 +94,9 @@ class DataProcessor:
 
         # Calculate number of unique points
         n_points = df.groupby(["longitude", "latitude"]).ngroup().nunique()
-        if n_points < 100:
+        if n_points < self.DEFAULT_CONFIG.points:
             logger.error(
-                f"Insufficient unique points ({n_points}/100) for parcel {parcel_id}"
+                f"Insufficient unique points ({n_points}/{self.DEFAULT_CONFIG.points}) for parcel {parcel_id}"
             )
             return None
 
@@ -105,9 +105,9 @@ class DataProcessor:
         df["doa"] = pd.to_datetime(df["time"], unit="ms").dt.date
         df = df.set_index(["ID_TS", "doa"]).sort_index()
 
-        # Sample 100 time series
+        # Sample time series
         ids = df.index.get_level_values(0).unique()
-        ids = np.random.choice(ids, size=100, replace=False)
+        ids = np.random.choice(ids, size=self.DEFAULT_CONFIG.points, replace=False)
         df = df.loc[ids]
 
         # Keep only needed bands and add NDVI
@@ -134,16 +134,14 @@ class DataProcessor:
                 x.set_index("doa")
                 .reindex(dates)
                 .interpolate(method="linear", limit_direction="both")
-                .iloc[
-                    :: self.DEFAULT_CONFIG["days_interval"], :
-                ]  # Sample every 5th date
+                .iloc[:: self.DEFAULT_CONFIG.days_interval, :]  # Sample every 5th date
             )
         )
 
         # Filter to desired date range
         df = df[
-            (df.index.get_level_values(1) >= self.DEFAULT_CONFIG["filter_start"])
-            & (df.index.get_level_values(1) <= self.DEFAULT_CONFIG["filter_end"])
+            (df.index.get_level_values(1) >= self.DEFAULT_CONFIG.filter_start)
+            & (df.index.get_level_values(1) <= self.DEFAULT_CONFIG.filter_end)
         ]
 
         # Add ID_RPG and convert types
@@ -156,23 +154,25 @@ class DataProcessor:
 
         # Verify final shape
         filter_start = datetime.datetime.strptime(
-            self.DEFAULT_CONFIG["filter_start"], "%Y-%m-%d"
+            self.DEFAULT_CONFIG.filter_start, "%Y-%m-%d"
         ).date()
         filter_end = datetime.datetime.strptime(
-            self.DEFAULT_CONFIG["filter_end"], "%Y-%m-%d"
+            self.DEFAULT_CONFIG.filter_end, "%Y-%m-%d"
         ).date()
         diff = (filter_end - filter_start).days
-        dates = round(diff / self.DEFAULT_CONFIG["days_interval"])
-        expected_rows = dates * 100  # 100 timeseries * 60 dates
+        dates = round(diff / self.DEFAULT_CONFIG.days_interval)
+        expected_rows = dates * self.DEFAULT_CONFIG.points
         if len(df) != expected_rows:
             logger.error(
                 f"Final shape mismatch for parcel {parcel_id}. Expected {expected_rows}, got {len(df)}"
             )
             return None
 
-        # Return as reshaped numpy array: 100 points x 60 dates x 12 bands
+        # Return as reshaped numpy array: nb of points x nb of dates x nb of bands (default: 100 x 60 x 12)
         return (
-            df[radiometric_bands].to_numpy().reshape(100, dates, len(radiometric_bands))
+            df[radiometric_bands]
+            .to_numpy()
+            .reshape(self.DEFAULT_CONFIG.points, dates, len(radiometric_bands))
         )
 
     def download_and_process_worker(

@@ -1,0 +1,8 @@
+/__pycache__/
+/processed_arrays/
+/out_memmap/
+/filtered/
+polygons_processed.*
+.DS_Store
+*.log
+*.backup

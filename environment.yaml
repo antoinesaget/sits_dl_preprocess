@@ -11,6 +11,7 @@ dependencies:
   - tqdm
   - pyarrow
   - pip
+  - pyyaml
   - pip:
     - mmap-ninja
     - earthengine-api 

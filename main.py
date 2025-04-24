@@ -7,16 +7,15 @@ processes it into a standardized format, and saves it as memory-mapped arrays
 for efficient access.
 """
 
+import argparse
 import logging
 import os
+from datetime import datetime
+from pathlib import Path
+
 import geopandas as gpd
 import pandas as pd
-from pathlib import Path
 import yaml
-import argparse
-import mmap_ninja
-import numpy as np
-from datetime import datetime
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
@@ -70,6 +69,7 @@ def setup_logging(log_file="download_process.log"):
 
     return logger
 
+
 def validate_data():
     # Parse dates into datetime objects
     start = datetime.strptime(DEFAULT_CONFIG["start"], "%Y-%m-%d").date()
@@ -85,23 +85,53 @@ def validate_data():
     if filter_start > filter_end:
         raise ValueError("Filter start date must be earlier than filter end date.")
     if start > filter_start:
-        raise ValueError("Start date must be earlier or equal to the filter_start date.")
+        raise ValueError(
+            "Start date must be earlier or equal to the filter_start date."
+        )
     if end < filter_end:
         raise ValueError("End date must be later or equal to the filter_end date.")
     if (area_min < 0) or (area_max < 0):
         raise ValueError("Area min and max must be non-negative.")
     if area_min > area_max:
         raise ValueError("Area min must be less than or equal to area max.")
-    
+
+
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Satellite imagery processing pipeline")
-    parser.add_argument("--current_dir", default=DEFAULT_DIRECTORY_PATHS["current_dir"], help="Base directory")
-    parser.add_argument("--sample_parquet", default=DEFAULT_DIRECTORY_PATHS["sample_parquet"], help="Path to sample parquet file")
-    parser.add_argument("--processed_arrays_folder", default=DEFAULT_DIRECTORY_PATHS["processed_arrays_folder"], help="Folder for processed arrays")
-    parser.add_argument("--memmap_folder", default=DEFAULT_DIRECTORY_PATHS["memmap_folder"], help="Folder for memory-mapped arrays")
-    parser.add_argument("--filtered_folder", default=DEFAULT_DIRECTORY_PATHS["filtered_folder"], help="Folder for filtered shapefiles")
-    parser.add_argument("--filtered_shp_path", default=DEFAULT_DIRECTORY_PATHS["filtered_shp_path"], help="Path to filtered shapefile")
+    parser = argparse.ArgumentParser(
+        description="Satellite imagery processing pipeline"
+    )
+    parser.add_argument(
+        "--current_dir",
+        default=DEFAULT_DIRECTORY_PATHS["current_dir"],
+        help="Base directory",
+    )
+    parser.add_argument(
+        "--sample_parquet",
+        default=DEFAULT_DIRECTORY_PATHS["sample_parquet"],
+        help="Path to sample parquet file",
+    )
+    parser.add_argument(
+        "--processed_arrays_folder",
+        default=DEFAULT_DIRECTORY_PATHS["processed_arrays_folder"],
+        help="Folder for processed arrays",
+    )
+    parser.add_argument(
+        "--memmap_folder",
+        default=DEFAULT_DIRECTORY_PATHS["memmap_folder"],
+        help="Folder for memory-mapped arrays",
+    )
+    parser.add_argument(
+        "--filtered_folder",
+        default=DEFAULT_DIRECTORY_PATHS["filtered_folder"],
+        help="Folder for filtered shapefiles",
+    )
+    parser.add_argument(
+        "--filtered_shp_path",
+        default=DEFAULT_DIRECTORY_PATHS["filtered_shp_path"],
+        help="Path to filtered shapefile",
+    )
     return parser.parse_args()
+
 
 def main():
     """Main function to execute the download and processing pipeline."""
@@ -111,7 +141,7 @@ def main():
 
     # Validate configuration data
     validate_data()
-    
+
     # Setup logging
     logger = setup_logging()
 
@@ -121,7 +151,6 @@ def main():
     ee_client.initialize_earth_engine(logger, DEFAULT_CONFIG["ee_project_name"])
     processor = DataProcessor()
     file_manager = FileManager()
-
 
     # Define paths - using sample parquet file
     current_dir = Path(args.current_dir)
@@ -137,16 +166,19 @@ def main():
     os.makedirs(filtered_folder, exist_ok=True)
 
     # Generate date range for the full year
-    dates = pd.date_range(DEFAULT_CONFIG["start"], DEFAULT_CONFIG["end"], freq="D", name="doa")
+    dates = pd.date_range(
+        DEFAULT_CONFIG["start"], DEFAULT_CONFIG["end"], freq="D", name="doa"
+    )
 
     # Load parcels from sample parquet file
     logger.info("Loading parcel data from sample file")
     df = gpd.read_parquet(sample_parquet).reset_index()
 
-
     # Filter by area
     logger.info("Filtering parcels by area")
-    df = processor.filter_by_area(df, DEFAULT_CONFIG["area_min"], DEFAULT_CONFIG["area_max"])
+    df = processor.filter_by_area(
+        df, DEFAULT_CONFIG["area_min"], DEFAULT_CONFIG["area_max"]
+    )
     print(df.head())
 
     # Save filtered shapefile
@@ -157,20 +189,34 @@ def main():
     df = df.to_crs("epsg:4326")
 
     # Process parcels
-    processor.process_parcels(df, DEFAULT_CONFIG, processed_arrays_folder, dates, logger, ee_client, RADIOMETRIC_BANDS, ALL_BANDS)
+    processor.process_parcels(
+        df,
+        DEFAULT_CONFIG,
+        processed_arrays_folder,
+        dates,
+        logger,
+        ee_client,
+        RADIOMETRIC_BANDS,
+        ALL_BANDS,
+    )
 
     # Filter and save valid parcels
     logger.info(f"Filtering and saving valid parcels to {processed_arrays_folder}")
-    df = file_manager.filter_and_save_valid_parcels(df, processed_arrays_folder, current_dir, logger)
+    df = file_manager.filter_and_save_valid_parcels(
+        df, processed_arrays_folder, current_dir, logger
+    )
 
     # Create memory-mapped array
     logger.info(f"Creating memory-mapped array into {memmap_folder}")
-    memmap = file_manager.create_memmap(df, processed_arrays_folder, memmap_folder, logger)
+    memmap = file_manager.create_memmap(
+        df, processed_arrays_folder, memmap_folder, logger
+    )
 
     print("Sample data from memory-mapped array:")
     print(memmap[:2, :5, :3])
 
     logger.info("Processing pipeline completed successfully")
+
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+import datetime
+import multiprocessing
+import os
+
+import numpy as np
+import pandas as pd
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -8,18 +14,13 @@ from rich.progress import (
     TextColumn,
     TimeRemainingColumn,
 )
-import multiprocessing
-import datetime
-import os
-import numpy as np
-import pandas as pd
+
 
 class DataProcessor:
-
     def __init__(self, DEFAULT_CONFIG):
         self.DEFAULT_CONFIG = DEFAULT_CONFIG
         pass
-        
+
     def parse(self, pixels, columns_types, all_bands):
         """
         Parse raw pixel data from Earth Engine into a DataFrame.
@@ -133,7 +134,9 @@ class DataProcessor:
                 x.set_index("doa")
                 .reindex(dates)
                 .interpolate(method="linear", limit_direction="both")
-                .iloc[::self.DEFAULT_CONFIG["days_interval"], :]  # Sample every 5th date
+                .iloc[
+                    :: self.DEFAULT_CONFIG["days_interval"], :
+                ]  # Sample every 5th date
             )
         )
 
@@ -152,11 +155,15 @@ class DataProcessor:
         df["NDVI"] = df["NDVI"].astype("float64")
 
         # Verify final shape
-        filter_start = datetime.strptime(self.DEFAULT_CONFIG["filter_start"], "%Y-%m-%d").date()
-        filter_end = datetime.strptime(self.DEFAULT_CONFIG["filter_end"], "%Y-%m-%d").date()
+        filter_start = datetime.strptime(
+            self.DEFAULT_CONFIG["filter_start"], "%Y-%m-%d"
+        ).date()
+        filter_end = datetime.strptime(
+            self.DEFAULT_CONFIG["filter_end"], "%Y-%m-%d"
+        ).date()
         diff = (filter_end - filter_start).days
-        dates = diff/self.DEFAULT_CONFIG["days_interval"] + 1
-        expected_rows = dates*100  # 100 timeseries * 60 dates
+        dates = diff / self.DEFAULT_CONFIG["days_interval"] + 1
+        expected_rows = dates * 100  # 100 timeseries * 60 dates
         if len(df) != expected_rows:
             logger.error(
                 f"Final shape mismatch for parcel {parcel_id}. Expected {expected_rows}, got {len(df)}"
@@ -164,9 +171,21 @@ class DataProcessor:
             return None
 
         # Return as reshaped numpy array: 100 points x 60 dates x 12 bands
-        return df[radiometric_bands].to_numpy().reshape(100, dates, len(radiometric_bands))
+        return (
+            df[radiometric_bands].to_numpy().reshape(100, dates, len(radiometric_bands))
+        )
 
-    def download_and_process_worker(self, args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client):
+    def download_and_process_worker(
+        self,
+        args,
+        config,
+        outfolder,
+        dates,
+        logger,
+        radiometric_bands,
+        all_bands,
+        ee_client,
+    ):
         """
         Worker function for parallel processing of parcels.
 
@@ -191,10 +210,14 @@ class DataProcessor:
 
             # Download data
             region = ee_client.shapely2ee(row["geometry"])
-            raw_df = ee_client.retrieve_data(region, row, config, logger, self, all_bands)
+            raw_df = ee_client.retrieve_data(
+                region, row, config, logger, self, all_bands
+            )
 
             # Process data
-            processed_array = self.process_dataframe(raw_df, dates, int(index), logger, radiometric_bands)
+            processed_array = self.process_dataframe(
+                raw_df, dates, int(index), logger, radiometric_bands
+            )
             if processed_array is None:
                 logger.error(f"Processing failed for parcel {row['ID_PARCEL']}")
                 return False
@@ -207,7 +230,17 @@ class DataProcessor:
             logger.error(f"Error processing parcel {index}: {e}")
             return False
 
-    def worker_wrapper(self, args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client):
+    def worker_wrapper(
+        self,
+        args,
+        config,
+        outfolder,
+        dates,
+        logger,
+        radiometric_bands,
+        all_bands,
+        ee_client,
+    ):
         """
         Wrapper around download_and_process_worker that unpacks arguments for multiprocessing.
 
@@ -221,9 +254,29 @@ class DataProcessor:
         Returns:
             bool: True if processing was successful, False otherwise
         """
-        return self.download_and_process_worker(args, config, outfolder, dates, logger, radiometric_bands, all_bands, ee_client)
+        return self.download_and_process_worker(
+            args,
+            config,
+            outfolder,
+            dates,
+            logger,
+            radiometric_bands,
+            all_bands,
+            ee_client,
+        )
 
-    def process_parcels(self, df, config, outfolder, dates, logger, ee_client, radiometric_bands, all_bands, n_workers=60):
+    def process_parcels(
+        self,
+        df,
+        config,
+        outfolder,
+        dates,
+        logger,
+        ee_client,
+        radiometric_bands,
+        all_bands,
+        n_workers=60,
+    ):
         """
         Process parcels in parallel.
 
@@ -250,13 +303,22 @@ class DataProcessor:
             TimeRemainingColumn(),
         )
 
-        logger.info(f"Starting processing of {len(df)} parcels with {n_workers} workers")
+        logger.info(
+            f"Starting processing of {len(df)} parcels with {n_workers} workers"
+        )
 
         # Use functools.partial to create a function with fixed arguments except the first one
         import functools
 
         worker_func = functools.partial(
-            self.worker_wrapper, config=config, outfolder=outfolder, dates=dates, logger=logger, radiometric_bands=radiometric_bands, all_bands=all_bands, ee_client=ee_client
+            self.worker_wrapper,
+            config=config,
+            outfolder=outfolder,
+            dates=dates,
+            logger=logger,
+            radiometric_bands=radiometric_bands,
+            all_bands=all_bands,
+            ee_client=ee_client,
         )
 
         try:

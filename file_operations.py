@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import mmap_ninja
 import os
+
+import mmap_ninja
 import numpy as np
 
-class FileManager:
 
+class FileManager:
     def __init__(self):
         pass
 

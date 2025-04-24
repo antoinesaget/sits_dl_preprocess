@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-from data_processing import DataProcessor
-import ee
 import time
+
+import ee
 import pandas as pd
 
+
 class EarthEngineClient:
-    
     def __init__(self):
         pass
 
@@ -100,7 +100,9 @@ class EarthEngineClient:
             try:
                 if retry:
                     # Try with smaller time windows
-                    starts, ends = processor.get_time_windows(config["start"], config["end"], steps)
+                    starts, ends = processor.get_time_windows(
+                        config["start"], config["end"], steps
+                    )
                     dataframe = pd.DataFrame()
                     logger.debug(
                         f"Retrying with {len(starts)} time steps for parcel {parcel_id}"
@@ -108,9 +110,16 @@ class EarthEngineClient:
 
                     for _start, _end in zip(starts, ends):
                         getinfo_dict = self.query(
-                            region, _start, _end, config["collection"], config["scale"], all_bands
+                            region,
+                            _start,
+                            _end,
+                            config["collection"],
+                            config["scale"],
+                            all_bands,
                         )
-                        dataframe_local = processor.parse(getinfo_dict, config["columns_types"], all_bands)
+                        dataframe_local = processor.parse(
+                            getinfo_dict, config["columns_types"], all_bands
+                        )
                         if len(dataframe_local) > 0:
                             dataframe = pd.concat([dataframe, dataframe_local])
 
@@ -125,14 +134,18 @@ class EarthEngineClient:
                         config["scale"],
                         all_bands,
                     )
-                    dataframe = processor.parse(getinfo_dict, config["columns_types"], all_bands)
+                    dataframe = processor.parse(
+                        getinfo_dict, config["columns_types"], all_bands
+                    )
                     return dataframe
 
             except ee.ee_exception.EEException as e:
                 if "ImageCollection.getRegion: Too many values:" in str(e):
                     if retry:
                         steps = steps // 2
-                        logger.debug(f"Reducing steps to {steps} for parcel {parcel_id}")
+                        logger.debug(
+                            f"Reducing steps to {steps} for parcel {parcel_id}"
+                        )
                     retry = True
                     continue
 

@@ -14,7 +14,6 @@ import hydra
 
 import geopandas as gpd
 import pandas as pd
-import yaml
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient

@@ -46,7 +46,7 @@ cd <repository-directory>
 ### 3. Authenticate with Earth Engine
 
 - You need a Google Earth Engine account with authentication set up
-- You need to specify your own earth engine project in order to use the script. You can do that in the [config file](config.yaml) directly, or from the command line (ee_project_name=your-project)
+- You need to specify your own earth engine project in order to use the script. You can do that in the [config file](config.yaml) directly, or from the command line (default.ee_project_name=your-project)
 - Authenticate : `earthengine authenticate`
 
 

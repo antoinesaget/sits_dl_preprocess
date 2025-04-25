@@ -21,6 +21,12 @@ from rich.progress import (
 
 class DataProcessor:
     def __init__(self, DEFAULT_CONFIG: dict):
+        """
+        Initialize the DataProcessor with default configuration.
+        This class is responsible for processing satellite data from Earth Engine.
+        Args:
+            DEFAULT_CONFIG: Default configuration dictionary
+        """
         self.DEFAULT_CONFIG = DEFAULT_CONFIG
         pass
 
@@ -33,6 +39,7 @@ class DataProcessor:
         Args:
             pixels: Raw pixel data from Earth Engine
             columns_types: Dictionary mapping column names to data types
+            all_bands: List of all bands
 
         Returns:
             pd.DataFrame: Processed DataFrame
@@ -96,6 +103,7 @@ class DataProcessor:
             dates: DatetimeIndex of dates to include
             parcel_id: Parcel ID
             logger: Logger object
+            radiometric_bands: List of radiometric bands
 
         Returns:
             numpy.ndarray: Processed array or None if processing failed
@@ -207,6 +215,9 @@ class DataProcessor:
             outfolder: Output folder path
             dates: DatetimeIndex of dates to include
             logger: Logger object
+            radiometric_bands: List of radiometric bands
+            all_bands: List of all bands
+            ee_client: EarthEngineClient object
 
         Returns:
             bool: True if processing was successful, False otherwise
@@ -262,6 +273,9 @@ class DataProcessor:
             outfolder: Output folder path
             dates: DatetimeIndex of dates to include
             logger: Logger object
+            radiometric_bands: List of radiometric bands
+            all_bands: List of all bands
+            ee_client: EarthEngineClient object
 
         Returns:
             bool: True if processing was successful, False otherwise
@@ -298,6 +312,9 @@ class DataProcessor:
             outfolder: Output folder path
             dates: DatetimeIndex of dates
             logger: Logger object
+            ee_client: EarthEngineClient object
+            radiometric_bands: List of radiometric bands
+            all_bands: List of all bands
             n_workers: Number of parallel workers
 
         Returns:

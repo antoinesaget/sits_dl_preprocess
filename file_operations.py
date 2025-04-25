@@ -10,6 +10,10 @@ import geopandas as gpd
 
 class FileManager:
     def __init__(self):
+        """
+        Initialize the FileManager class.
+        This class is responsible for managing file operations related to parcel data.
+        """
         pass
 
     def filter_and_save_valid_parcels(

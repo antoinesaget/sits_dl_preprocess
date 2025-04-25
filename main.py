@@ -58,7 +58,11 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
 
 @hydra.main(version_base=None, config_path="", config_name="config")
 def main(data: dict):
-    """Main function to execute the download and processing pipeline."""
+    """
+    Main function to execute the download and processing pipeline.
+    Args:
+        data: Configuration data loaded with Hydra from config.yaml
+    """
 
     # Setup logging
     logger = setup_logging()

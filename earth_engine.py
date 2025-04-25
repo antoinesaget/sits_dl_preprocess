@@ -11,6 +11,10 @@ import pandas as pd
 
 class EarthEngineClient:
     def __init__(self):
+        """
+        Initialize the EarthEngineClient class.
+        This class is responsible for interacting with Google Earth Engine
+        """
         pass
 
     def initialize_earth_engine(self, logger: Logger, project_name: str) -> None:
@@ -19,6 +23,7 @@ class EarthEngineClient:
 
         Args:
             logger: Logger object for recording status
+            project_name: Google Earth Engine project name
         """
         try:
             ee.Initialize(
@@ -68,6 +73,7 @@ class EarthEngineClient:
             end: End date (YYYY-MM-DD)
             collection: Earth Engine collection name
             scale: Pixel scale in meters
+            all_bands: List of bands
 
         Returns:
             List of image data
@@ -103,6 +109,8 @@ class EarthEngineClient:
             row: DataFrame row containing parcel info
             config: Configuration dictionary
             logger: Logger object
+            processor: DataProcessor object
+            all_bands: List of bands to retrieve
 
         Returns:
             pd.DataFrame: Downloaded satellite data

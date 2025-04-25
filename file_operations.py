@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 
+from logging import Logger
 import os
 
 import mmap_ninja
 import numpy as np
+import geopandas as gpd
 
 
 class FileManager:
     def __init__(self):
         pass
 
-    def filter_and_save_valid_parcels(self, df, input_folder, output_path, logger):
+    def filter_and_save_valid_parcels(
+        self, df: gpd.GeoDataFrame, input_folder: str, output_path: str, logger: Logger
+    ) -> gpd.GeoDataFrame:
         """
         Filter parcels to keep only those with valid processed files.
 
@@ -44,12 +48,19 @@ class FileManager:
         os.makedirs(output_path, exist_ok=True)
 
         # Save files
+
         df.to_file(shapefile_path, driver="ESRI Shapefile")
         df.to_parquet(parquet_path)
 
         return df
 
-    def create_memmap(self, df, input_folder, output_folder, logger):
+    def create_memmap(
+        self,
+        df: gpd.GeoDataFrame,
+        input_folder: str,
+        output_folder: str,
+        logger: Logger,
+    ) -> mmap_ninja.NpMemmap:
         """
         Convert individual .npy files to a memory-mapped array.
 

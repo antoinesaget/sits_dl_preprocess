@@ -20,7 +20,7 @@ from earth_engine import EarthEngineClient
 from file_operations import FileManager
 
 
-def setup_logging(log_file="download_process.log"):
+def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
     """
     Configure logging for the application.
 
@@ -57,7 +57,7 @@ def setup_logging(log_file="download_process.log"):
 
 
 @hydra.main(version_base=None, config_path="", config_name="config")
-def main(data):
+def main(data: dict):
     """Main function to execute the download and processing pipeline."""
 
     # Setup logging

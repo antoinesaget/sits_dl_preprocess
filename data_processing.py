@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import datetime
+from logging import Logger
 import multiprocessing
 import os
 
 import numpy as np
 import pandas as pd
+import geopandas as gpd
+from earth_engine import EarthEngineClient
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -17,11 +20,13 @@ from rich.progress import (
 
 
 class DataProcessor:
-    def __init__(self, DEFAULT_CONFIG):
+    def __init__(self, DEFAULT_CONFIG: dict):
         self.DEFAULT_CONFIG = DEFAULT_CONFIG
         pass
 
-    def parse(self, pixels, columns_types, all_bands):
+    def parse(
+        self, pixels: list[list], columns_types: dict, all_bands: list
+    ) -> pd.DataFrame:
         """
         Parse raw pixel data from Earth Engine into a DataFrame.
 
@@ -53,7 +58,7 @@ class DataProcessor:
 
         return dataframe.reset_index(drop=True)
 
-    def get_time_windows(self, start_date, end_date, steps):
+    def get_time_windows(self, start_date: str, end_date: str, steps: int) -> tuple:
         """
         Split a time range into smaller windows.
 
@@ -75,7 +80,14 @@ class DataProcessor:
 
         return starts, ends
 
-    def process_dataframe(self, df, dates, parcel_id, logger, radiometric_bands):
+    def process_dataframe(
+        self,
+        df: pd.DataFrame,
+        dates: pd.DatetimeIndex,
+        parcel_id: int,
+        logger: Logger,
+        radiometric_bands: list,
+    ) -> np.ndarray:
         """
         Process the downloaded dataframe into the final array format.
 
@@ -177,15 +189,15 @@ class DataProcessor:
 
     def download_and_process_worker(
         self,
-        args,
-        config,
-        outfolder,
-        dates,
-        logger,
-        radiometric_bands,
-        all_bands,
-        ee_client,
-    ):
+        args: tuple,
+        config: dict,
+        outfolder: str,
+        dates: pd.DatetimeIndex,
+        logger: Logger,
+        radiometric_bands: list,
+        all_bands: list,
+        ee_client: EarthEngineClient,
+    ) -> bool:
         """
         Worker function for parallel processing of parcels.
 
@@ -232,15 +244,15 @@ class DataProcessor:
 
     def worker_wrapper(
         self,
-        args,
-        config,
-        outfolder,
-        dates,
-        logger,
-        radiometric_bands,
-        all_bands,
-        ee_client,
-    ):
+        args: tuple,
+        config: dict,
+        outfolder: str,
+        dates: pd.DatetimeIndex,
+        logger: Logger,
+        radiometric_bands: list,
+        all_bands: list,
+        ee_client: EarthEngineClient,
+    ) -> bool:
         """
         Wrapper around download_and_process_worker that unpacks arguments for multiprocessing.
 
@@ -267,16 +279,16 @@ class DataProcessor:
 
     def process_parcels(
         self,
-        df,
-        config,
-        outfolder,
-        dates,
-        logger,
-        ee_client,
-        radiometric_bands,
-        all_bands,
-        n_workers=60,
-    ):
+        df: gpd.GeoDataFrame,
+        config: dict,
+        outfolder: str,
+        dates: pd.DatetimeIndex,
+        logger: Logger,
+        ee_client: EarthEngineClient,
+        radiometric_bands: list,
+        all_bands: list,
+        n_workers: int = 60,
+    ) -> None:
         """
         Process parcels in parallel.
 
@@ -336,7 +348,9 @@ class DataProcessor:
             pool.close()
             pool.join()
 
-    def filter_by_area(self, df, area_min, area_max):
+    def filter_by_area(
+        self, df: gpd.GeoDataFrame, area_min: int, area_max: int
+    ) -> gpd.GeoDataFrame:
         """
         Filter parcels by area in hectares.
 

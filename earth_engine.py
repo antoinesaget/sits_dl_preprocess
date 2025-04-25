@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+from logging import Logger
 import time
 
+from data_processing import DataProcessor
+import shapely
 import ee
 import pandas as pd
 
@@ -10,7 +13,7 @@ class EarthEngineClient:
     def __init__(self):
         pass
 
-    def initialize_earth_engine(self, logger, project_name):
+    def initialize_earth_engine(self, logger: Logger, project_name: str) -> None:
         """
         Initialize Google Earth Engine with authentication if needed.
 
@@ -34,7 +37,7 @@ class EarthEngineClient:
             )
             logger.info("Earth Engine initialized after authentication")
 
-    def shapely2ee(self, geometry):
+    def shapely2ee(self, geometry: shapely.Geometry) -> ee.Geometry:
         """
         Convert Shapely geometry to Earth Engine geometry.
 
@@ -47,7 +50,15 @@ class EarthEngineClient:
         pt_list = list(zip(*geometry.exterior.coords.xy))
         return ee.Geometry.Polygon(pt_list)
 
-    def query(self, region, start, end, collection, scale, all_bands):
+    def query(
+        self,
+        region: ee.Geometry,
+        start: str,
+        end: str,
+        collection: str,
+        scale: int,
+        all_bands: list,
+    ) -> list:
         """
         Query Earth Engine for satellite imagery.
 
@@ -75,7 +86,15 @@ class EarthEngineClient:
 
         return images.getRegion(sampled_points, scale).getInfo()
 
-    def retrieve_data(self, region, row, config, logger, processor, all_bands):
+    def retrieve_data(
+        self,
+        region: ee.Geometry,
+        row: pd.DataFrame,
+        config: dict,
+        logger: Logger,
+        processor: DataProcessor,
+        all_bands: list,
+    ) -> pd.DataFrame:
         """
         Retrieve satellite data from Earth Engine with automatic retry for large areas.
 

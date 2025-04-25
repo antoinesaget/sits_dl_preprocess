@@ -58,3 +58,4 @@ paths:
   memmap_folder: "out_memmap" # Folder to save memmap arrays
   filtered_folder: "filtered" # Folder to save filtered arrays
   filtered_shp_path: "filtered/polygons_filtered.shp" # Path to the filtered shapefile
+  polygons_processed_folder: "polygons_processed" # Folder to save processed polygons files

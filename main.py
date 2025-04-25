@@ -72,6 +72,7 @@ def main(data):
 
     # Define paths - using sample parquet file
     current_dir = Path(data.paths.current_dir)
+    polygons_processed_folder = current_dir / data.paths.polygons_processed_folder
     sample_parquet = current_dir / data.paths.sample_parquet
     processed_arrays_folder = current_dir / data.paths.processed_arrays_folder
     memmap_folder = current_dir / data.paths.memmap_folder
@@ -117,7 +118,7 @@ def main(data):
     # Filter and save valid parcels
     logger.info(f"Filtering and saving valid parcels to {processed_arrays_folder}")
     df = file_manager.filter_and_save_valid_parcels(
-        df, processed_arrays_folder, current_dir, logger
+        df, processed_arrays_folder, polygons_processed_folder, logger
     )
 
     # Create memory-mapped array

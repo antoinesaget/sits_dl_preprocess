@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-from logging import Logger
 import os
+from logging import Logger
 
+import geopandas as gpd
 import mmap_ninja
 import numpy as np
-import geopandas as gpd
 
 
 class FileManager:

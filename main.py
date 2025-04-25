@@ -10,9 +10,9 @@ for efficient access.
 import logging
 import os
 from pathlib import Path
-import hydra
 
 import geopandas as gpd
+import hydra
 import pandas as pd
 
 from data_processing import DataProcessor

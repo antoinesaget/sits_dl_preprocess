@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from logging import Logger
 import time
+from logging import Logger
 
-from data_processing import DataProcessor
-import shapely
 import ee
 import pandas as pd
+import shapely
+
+from data_processing import DataProcessor
 
 
 class EarthEngineClient:

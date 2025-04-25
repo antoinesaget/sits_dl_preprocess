@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 import datetime
-from logging import Logger
 import multiprocessing
 import os
+from logging import Logger
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
-from earth_engine import EarthEngineClient
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -17,6 +16,8 @@ from rich.progress import (
     TextColumn,
     TimeRemainingColumn,
 )
+
+from earth_engine import EarthEngineClient
 
 
 class DataProcessor:

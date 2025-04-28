@@ -67,13 +67,6 @@ def main(data: dict):
     # Setup logging
     logger = setup_logging()
 
-    logger.info("Initializing classes")
-    # Initialize EarthEngineClient, DataProcessor, and FileManager classes
-    ee_client = EarthEngineClient()
-    ee_client.initialize_earth_engine(logger, data.default.ee_project_name)
-    processor = DataProcessor(data.default)
-    file_manager = FileManager()
-
     # Define paths - using sample parquet file
     current_dir = Path(data.paths.current_dir)
     polygons_processed_folder = current_dir / data.paths.polygons_processed_folder
@@ -90,6 +83,23 @@ def main(data: dict):
 
     # Generate date range for the full year
     dates = pd.date_range(data.default.start, data.default.end, freq="D", name="doa")
+
+    logger.info("Initializing classes")
+    # Initialize EarthEngineClient, DataProcessor, and FileManager classes
+    ee_client = EarthEngineClient(
+        logger, data.default, list(data.bands.radiometric_bands + data.bands.misc_bands)
+    )
+    ee_client.initialize_earth_engine(data.default.ee_project_name)
+    processor = DataProcessor(
+        logger,
+        data.default,
+        list(data.bands.radiometric_bands),
+        list(data.bands.radiometric_bands + data.bands.misc_bands),
+        processed_arrays_folder,
+        dates,
+        ee_client,
+    )
+    file_manager = FileManager(logger, processed_arrays_folder)
 
     # Load parcels from sample parquet file
     logger.info("Loading parcel data from sample file")
@@ -108,28 +118,15 @@ def main(data: dict):
     df = df.to_crs("epsg:4326")
 
     # Process parcels
-    processor.process_parcels(
-        df,
-        data.default,
-        processed_arrays_folder,
-        dates,
-        logger,
-        ee_client,
-        list(data.bands.radiometric_bands),
-        list(data.bands.radiometric_bands + data.bands.misc_bands),
-    )
+    processor.process_parcels(df)
 
     # Filter and save valid parcels
     logger.info(f"Filtering and saving valid parcels to {processed_arrays_folder}")
-    df = file_manager.filter_and_save_valid_parcels(
-        df, processed_arrays_folder, polygons_processed_folder, logger
-    )
+    df = file_manager.filter_and_save_valid_parcels(df, polygons_processed_folder)
 
     # Create memory-mapped array
     logger.info(f"Creating memory-mapped array into {memmap_folder}")
-    memmap = file_manager.create_memmap(
-        df, processed_arrays_folder, memmap_folder, logger
-    )
+    memmap = file_manager.create_memmap(df, memmap_folder)
 
     print("Sample data from memory-mapped array:")
     print(memmap[:2, :5, :3])

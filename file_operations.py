@@ -9,44 +9,48 @@ import numpy as np
 
 
 class FileManager:
-    def __init__(self):
+    def __init__(self, logger: Logger, input_folder: str):
         """
         Initialize the FileManager class.
         This class is responsible for managing file operations related to parcel data.
+        Args:
+            logger: Logger object for recording status
+            input_folder: Folder containing processed .npy files
         """
-        pass
+        self.logger = logger
+        self.input_folder = input_folder
 
     def filter_and_save_valid_parcels(
-        self, df: gpd.GeoDataFrame, input_folder: str, output_path: str, logger: Logger
+        self, df: gpd.GeoDataFrame, output_path: str
     ) -> gpd.GeoDataFrame:
         """
         Filter parcels to keep only those with valid processed files.
 
         Args:
             df: GeoDataFrame with parcels
-            input_folder: Folder containing processed .npy files
             output_path: Path for dataset files
-            logger: Logger object
 
         Returns:
             GeoDataFrame: Filtered parcels
         """
-        logger.info("Starting validation")
+        self.logger.info("Starting validation")
 
         valid_indices = []
         for i in range(len(df)):
             idx = df.iloc[i]["ID_PARCEL"]
-            if (input_folder / f"{int(idx) // 5000}/{idx}.npy").exists():
+            if (self.input_folder / f"{int(idx) // 5000}/{idx}.npy").exists():
                 valid_indices.append(i)
 
         df = df.iloc[valid_indices].reset_index(drop=True)
-        logger.info(f"Filtered to {len(df)} rows with existing .npy files")
+        self.logger.info(f"Filtered to {len(df)} rows with existing .npy files")
 
         # Save filtered dataset
         shapefile_path = output_path / "polygons_processed.shp"
         parquet_path = output_path / "polygons_processed.parquet"
 
-        logger.info(f"Saving processed parcels to {shapefile_path} and {parquet_path}")
+        self.logger.info(
+            f"Saving processed parcels to {shapefile_path} and {parquet_path}"
+        )
 
         # Ensure output directory exists
         os.makedirs(output_path, exist_ok=True)
@@ -61,23 +65,19 @@ class FileManager:
     def create_memmap(
         self,
         df: gpd.GeoDataFrame,
-        input_folder: str,
         output_folder: str,
-        logger: Logger,
     ) -> np.memmap:
         """
         Convert individual .npy files to a memory-mapped array.
 
         Args:
             df: GeoDataFrame with valid parcels
-            input_folder: Folder containing .npy files
             output_folder: Folder to save memory-mapped files
-            logger: Logger object
 
         Returns:
             mmap_ninja.NpMemmap: Memory-mapped array
         """
-        logger.info("Starting memmap conversion")
+        self.logger.info("Starting memmap conversion")
 
         # Ensure output directory exists
         os.makedirs(output_folder, exist_ok=True)
@@ -85,12 +85,12 @@ class FileManager:
         # Function to get array by index
         def get_array(i):
             idx = df.iloc[i]["ID_PARCEL"]
-            return np.load(input_folder / f"{int(idx) // 5000}/{idx}.npy")
+            return np.load(self.input_folder / f"{int(idx) // 5000}/{idx}.npy")
 
         # Create memory-mapped array from generator
         from tqdm.autonotebook import tqdm
 
-        logger.info(f"Creating memory-mapped array from {len(df)} parcels")
+        self.logger.info(f"Creating memory-mapped array from {len(df)} parcels")
         mmap_ninja.np_from_generator(
             out_dir=output_folder,
             sample_generator=map(get_array, tqdm(range(len(df)))),
@@ -99,6 +99,6 @@ class FileManager:
 
         # Open and verify the created memory-mapped array
         memmap = mmap_ninja.np_open_existing(output_folder)
-        logger.info(f"Memmap conversion completed. Final shape: {memmap.shape}")
+        self.logger.info(f"Memmap conversion completed. Final shape: {memmap.shape}")
 
         return memmap

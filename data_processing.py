@@ -17,18 +17,16 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from earth_engine import EarthEngineClient
-
 
 class DataProcessor:
-    def __init__(self, DEFAULT_CONFIG: dict):
+    def __init__(self, data: dict):
         """
         Initialize the DataProcessor with default configuration.
         This class is responsible for processing satellite data from Earth Engine.
         Args:
-            DEFAULT_CONFIG: Default configuration dictionary
+            data: Default configuration dictionary
         """
-        self.DEFAULT_CONFIG = DEFAULT_CONFIG
+        self.data = data
         pass
 
     def parse(
@@ -115,9 +113,9 @@ class DataProcessor:
 
         # Calculate number of unique points
         n_points = df.groupby(["longitude", "latitude"]).ngroup().nunique()
-        if n_points < self.DEFAULT_CONFIG.points:
+        if n_points < self.data.points:
             logger.error(
-                f"Insufficient unique points ({n_points}/{self.DEFAULT_CONFIG.points}) for parcel {parcel_id}"
+                f"Insufficient unique points ({n_points}/{self.data.points}) for parcel {parcel_id}"
             )
             return None
 
@@ -128,7 +126,7 @@ class DataProcessor:
 
         # Sample time series
         ids = df.index.get_level_values(0).unique()
-        ids = np.random.choice(ids, size=self.DEFAULT_CONFIG.points, replace=False)
+        ids = np.random.choice(ids, size=self.data.points, replace=False)
         df = df.loc[ids]
 
         # Keep only needed bands and add NDVI
@@ -155,14 +153,14 @@ class DataProcessor:
                 x.set_index("doa")
                 .reindex(dates)
                 .interpolate(method="linear", limit_direction="both")
-                .iloc[:: self.DEFAULT_CONFIG.days_interval, :]  # Sample every 5th date
+                .iloc[:: self.data.days_interval, :]  # Sample every 5th date
             )
         )
 
         # Filter to desired date range
         df = df[
-            (df.index.get_level_values(1) >= self.DEFAULT_CONFIG.filter_start)
-            & (df.index.get_level_values(1) <= self.DEFAULT_CONFIG.filter_end)
+            (df.index.get_level_values(1) >= self.data.filter_start)
+            & (df.index.get_level_values(1) <= self.data.filter_end)
         ]
 
         # Add ID_RPG and convert types
@@ -175,14 +173,12 @@ class DataProcessor:
 
         # Verify final shape
         filter_start = datetime.datetime.strptime(
-            self.DEFAULT_CONFIG.filter_start, "%Y-%m-%d"
+            self.data.filter_start, "%Y-%m-%d"
         ).date()
-        filter_end = datetime.datetime.strptime(
-            self.DEFAULT_CONFIG.filter_end, "%Y-%m-%d"
-        ).date()
+        filter_end = datetime.datetime.strptime(self.data.filter_end, "%Y-%m-%d").date()
         diff = (filter_end - filter_start).days
-        dates = round(diff / self.DEFAULT_CONFIG.days_interval)
-        expected_rows = dates * self.DEFAULT_CONFIG.points
+        dates = round(diff / self.data.days_interval)
+        expected_rows = dates * self.data.points
         if len(df) != expected_rows:
             logger.error(
                 f"Final shape mismatch for parcel {parcel_id}. Expected {expected_rows}, got {len(df)}"
@@ -193,7 +189,7 @@ class DataProcessor:
         return (
             df[radiometric_bands]
             .to_numpy()
-            .reshape(self.DEFAULT_CONFIG.points, dates, len(radiometric_bands))
+            .reshape(self.data.points, dates, len(radiometric_bands))
         )
 
     def download_and_process_worker(
@@ -205,7 +201,7 @@ class DataProcessor:
         logger: Logger,
         radiometric_bands: list,
         all_bands: list,
-        ee_client: EarthEngineClient,
+        ee_client,
     ) -> bool:
         """
         Worker function for parallel processing of parcels.
@@ -263,7 +259,7 @@ class DataProcessor:
         logger: Logger,
         radiometric_bands: list,
         all_bands: list,
-        ee_client: EarthEngineClient,
+        ee_client,
     ) -> bool:
         """
         Wrapper around download_and_process_worker that unpacks arguments for multiprocessing.
@@ -299,7 +295,7 @@ class DataProcessor:
         outfolder: str,
         dates: pd.DatetimeIndex,
         logger: Logger,
-        ee_client: EarthEngineClient,
+        ee_client,
         radiometric_bands: list,
         all_bands: list,
         n_workers: int = 60,

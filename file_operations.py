@@ -64,7 +64,7 @@ class FileManager:
         input_folder: str,
         output_folder: str,
         logger: Logger,
-    ) -> mmap_ninja.NpMemmap:
+    ) -> np.memmap:
         """
         Convert individual .npy files to a memory-mapped array.
 

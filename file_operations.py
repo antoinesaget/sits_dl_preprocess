@@ -2,6 +2,7 @@
 
 import os
 from logging import Logger
+from pathlib import Path
 
 import geopandas as gpd
 import mmap_ninja
@@ -102,3 +103,15 @@ class FileManager:
         self.logger.info(f"Memmap conversion completed. Final shape: {memmap.shape}")
 
         return memmap
+
+    def clear_folder(self, folder_path: Path):
+        if folder_path.exists():
+            self.logger.info(f"Clearing folder: {folder_path}")
+            for item in folder_path.iterdir():
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    self.clear_folder(Path(item))
+            os.rmdir(folder_path)
+        else:
+            self.logger.warning(f"Folder {folder_path} does not exist")

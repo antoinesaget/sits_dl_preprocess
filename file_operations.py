@@ -115,3 +115,34 @@ class FileManager:
             os.rmdir(folder_path)
         else:
             self.logger.warning(f"Folder {folder_path} does not exist")
+
+    def reset_folders(self, data: dict, logger: Logger):
+        if data.folders_to_reset is not None:
+            logger.info(f"Resetting folders: {data.folders_to_reset}")
+            for folder in data.folders_to_reset:
+                folder_path = Path(folder)
+                if folder_path.exists():
+                    logger.info(f"Clearing folder: {folder_path}")
+                    for item in folder_path.iterdir():
+                        if item.is_file():
+                            item.unlink()
+                        elif item.is_dir():
+                            self.clear_folder(Path(item))
+                else:
+                    logger.warning(f"Folder {folder_path} does not exist")
+        else:
+            logger.info(
+                f"Resetting the default folder: {data.paths.processed_arrays_folder}"
+            )
+            folder = Path(data.paths.processed_arrays_folder)
+            if folder.exists() and folder.is_dir():
+                logger.info(f"Clearing default folder: {folder}")
+                for item in folder.iterdir():
+                    if item.is_file():
+                        item.unlink()
+                    elif item.is_dir():
+                        self.clear_folder(Path(item))
+            else:
+                logger.warning(
+                    f"Default folder {folder} does not exist or is not a directory"
+                )

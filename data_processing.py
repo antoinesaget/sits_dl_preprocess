@@ -277,9 +277,7 @@ class DataProcessor:
         # Use functools.partial to create a function with fixed arguments except the first one
         import functools
 
-        worker_func = functools.partial(
-            self.worker_wrapper,
-        )
+        worker_func = functools.partial(self.worker_wrapper)
 
         try:
             with progress:
@@ -291,6 +289,9 @@ class DataProcessor:
                 # This error occurs during Pool cleanup and can be safely ignored
                 self.logger.info("Ignoring Pool cleanup AttributeError")
             else:
+                self.logger.error(
+                    f"process_parcels: Unexpected error during processing: {e}"
+                )
                 raise
         finally:
             pool.close()

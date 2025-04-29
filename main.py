@@ -13,6 +13,7 @@ from pathlib import Path
 
 import hydra
 import pandas as pd
+import geopandas as gpd
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
@@ -53,38 +54,6 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
         logging.getLogger().removeHandler(handler)
 
     return logger
-
-
-def reset_folders(file_manager: FileManager, data: dict, logger: logging.Logger):
-    if data.folders_to_reset is not None:
-        logger.info(f"Resetting folders: {data.folders_to_reset}")
-        for folder in data.folders_to_reset:
-            folder_path = Path(folder)
-            if folder_path.exists():
-                logger.info(f"Clearing folder: {folder_path}")
-                for item in folder_path.iterdir():
-                    if item.is_file():
-                        item.unlink()
-                    elif item.is_dir():
-                        file_manager.clear_folder(Path(item))
-            else:
-                logger.warning(f"Folder {folder_path} does not exist")
-    else:
-        logger.info(
-            f"Resetting the default folder: {data.paths.processed_arrays_folder}"
-        )
-        folder = Path(data.paths.processed_arrays_folder)
-        if folder.exists() and folder.is_dir():
-            logger.info(f"Clearing default folder: {folder}")
-            for item in folder.iterdir():
-                if item.is_file():
-                    item.unlink()
-                elif item.is_dir():
-                    file_manager.clear_folder(Path(item))
-        else:
-            logger.warning(
-                f"Default folder {folder} does not exist or is not a directory"
-            )
 
 
 @hydra.main(version_base=None, config_path="", config_name="config")
@@ -133,10 +102,8 @@ def main(data: dict):
     file_manager = FileManager(logger, processed_arrays_folder)
 
     if data.reset_folders:
-        reset_folders(file_manager, data, logger)
+        file_manager.reset_folders(data, logger)
 
-
-"""
     # Load parcels from sample parquet file
     logger.info("Loading parcel data from sample file")
     df = gpd.read_parquet(sample_parquet).reset_index()
@@ -168,7 +135,7 @@ def main(data: dict):
     print(memmap[:2, :5, :3])
 
     logger.info("Processing pipeline completed successfully")
-"""
+
 
 if __name__ == "__main__":
     main()

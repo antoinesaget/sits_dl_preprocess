@@ -20,6 +20,12 @@ from earth_engine import EarthEngineClient
 from file_operations import FileManager
 
 
+class InfoOnlyFilter(logging.Filter):
+    def filter(self, record):
+        # Allow only INFO-level messages
+        return record.levelno == logging.INFO
+
+
 def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
     """
     Configure logging for the application.
@@ -43,6 +49,7 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
+    stream_handler.addFilter(InfoOnlyFilter())
     logger.addHandler(stream_handler)
 
     file_handler = logging.FileHandler(log_file)
@@ -84,8 +91,8 @@ def main(data: dict):
     # Generate date range for the full year
     dates = pd.date_range(data.default.start, data.default.end, freq="D", name="doa")
 
-    logger.info("Initializing classes")
     # Initialize EarthEngineClient, DataProcessor, and FileManager classes
+    logger.info("Initializing classes")
     ee_client = EarthEngineClient(
         logger, data.default, list(data.bands.radiometric_bands + data.bands.misc_bands)
     )
@@ -130,9 +137,6 @@ def main(data: dict):
     # Create memory-mapped array
     logger.info(f"Creating memory-mapped array into {memmap_folder}")
     memmap = file_manager.create_memmap(df, memmap_folder)
-
-    print("Sample data from memory-mapped array:")
-    print(memmap[:2, :5, :3])
 
     logger.info("Processing pipeline completed successfully")
 

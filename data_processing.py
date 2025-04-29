@@ -289,11 +289,12 @@ class DataProcessor:
                 # This error occurs during Pool cleanup and can be safely ignored
                 self.logger.info("Ignoring Pool cleanup AttributeError")
             else:
-                self.logger.error(
-                    f"process_parcels: Unexpected error during processing: {e}"
-                )
                 raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error during processing: {e}")
+            raise
         finally:
+            self.logger.info(f"Processing completed for {len(df)} parcels")
             pool.close()
             pool.join()
 

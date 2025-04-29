@@ -41,12 +41,18 @@ class EarthEngineClient:
             self.logger.warning(
                 f"Initial EE initialization failed, attempting authentication: {e}"
             )
-            ee.Authenticate()
-            ee.Initialize(
-                opt_url="https://earthengine-highvolume.googleapis.com",
-                project=project_name,
-            )
-            self.logger.info("Earth Engine initialized after authentication")
+            try:
+                ee.Authenticate()
+                ee.Initialize(
+                    opt_url="https://earthengine-highvolume.googleapis.com",
+                    project=project_name,
+                )
+                self.logger.info("Earth Engine initialized after authentication")
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize Earth Engine after authentication: {e}"
+                )
+                raise
 
     def shapely2ee(self, geometry: shapely.Geometry) -> ee.Geometry:
         """
@@ -73,13 +79,22 @@ class EarthEngineClient:
         Returns:
             List of image data
         """
-        images = (
-            ee.ImageCollection(self.config.collection)
-            .filterDate(start, end)
-            .filterBounds(region)
-            .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
-            .select(self.all_bands)
-        )
+        try:
+            images = (
+                ee.ImageCollection(self.config.collection)
+                .filterDate(start, end)
+                .filterBounds(region)
+                .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
+                .select(self.all_bands)
+            )
+        except ee.ee_exception.EEException as e:
+            self.logger.error(
+                f"Earth Engine error while filtering image collection: {e}"
+            )
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error while querying Earth Engine: {e}")
+            raise
 
         sampled_points = ee.FeatureCollection.randomPoints(
             **{"region": region, "points": 200, "seed": 42}

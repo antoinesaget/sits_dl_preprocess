@@ -11,7 +11,6 @@ import logging
 import os
 from pathlib import Path
 
-import geopandas as gpd
 import hydra
 import pandas as pd
 

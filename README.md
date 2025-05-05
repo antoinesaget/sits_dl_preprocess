@@ -46,7 +46,7 @@ cd <repository-directory>
 ### 3. Authenticate with Earth Engine
 
 - You need a Google Earth Engine account with authentication set up
-- The script uses the project `ee-antoinesaget` - you need to modify it to use your own earth engine project
+- You need to specify your own earth engine project in order to use the script. You can do that in the [config file](config.yaml) directly, or from the command line (default.ee_project_name=your-project)
 - Authenticate : `earthengine authenticate`
 
 
@@ -90,6 +90,7 @@ default:
   filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
   ee_project_name: "ee-magzoumov" # Earth Engine project name
   days_interval: 5 # Sample every 5th date
+  points: 100 # Number of points for each parcel
 ```
 
 You can modify these parameters before running the script.

@@ -17,8 +17,6 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from earth_engine import EarthEngineClient
-
 
 class DataProcessor:
     def __init__(self, DEFAULT_CONFIG: dict):
@@ -205,7 +203,7 @@ class DataProcessor:
         logger: Logger,
         radiometric_bands: list,
         all_bands: list,
-        ee_client: EarthEngineClient,
+        ee_client,
     ) -> bool:
         """
         Worker function for parallel processing of parcels.
@@ -263,7 +261,7 @@ class DataProcessor:
         logger: Logger,
         radiometric_bands: list,
         all_bands: list,
-        ee_client: EarthEngineClient,
+        ee_client,
     ) -> bool:
         """
         Wrapper around download_and_process_worker that unpacks arguments for multiprocessing.
@@ -299,7 +297,7 @@ class DataProcessor:
         outfolder: str,
         dates: pd.DatetimeIndex,
         logger: Logger,
-        ee_client: EarthEngineClient,
+        ee_client,
         radiometric_bands: list,
         all_bands: list,
         n_workers: int = 60,

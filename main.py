@@ -57,35 +57,9 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
 
 
 def reset_folders(file_manager: FileManager, data: dict, logger: logging.Logger):
-    if data.folders_to_reset is not None:
-        logger.info(f"Resetting folders: {data.folders_to_reset}")
-        for folder in data.folders_to_reset:
-            folder_path = Path(folder)
-            if folder_path.exists():
-                logger.info(f"Clearing folder: {folder_path}")
-                for item in folder_path.iterdir():
-                    if item.is_file():
-                        item.unlink()
-                    elif item.is_dir():
-                        file_manager.clear_folder(Path(item))
-            else:
-                logger.warning(f"Folder {folder_path} does not exist")
-    else:
-        logger.info(
-            f"Resetting the default folder: {data.paths.processed_arrays_folder}"
-        )
-        folder = Path(data.paths.processed_arrays_folder)
-        if folder.exists() and folder.is_dir():
-            logger.info(f"Clearing default folder: {folder}")
-            for item in folder.iterdir():
-                if item.is_file():
-                    item.unlink()
-                elif item.is_dir():
-                    file_manager.clear_folder(Path(item))
-        else:
-            logger.warning(
-                f"Default folder {folder} does not exist or is not a directory"
-            )
+    logger.info(f"Resetting folders: {data.folders_to_reset}")
+    for folder in data.folders_to_reset:
+        file_manager.clear_folder(Path(folder))
 
 
 @hydra.main(version_base=None, config_path="", config_name="config")
@@ -136,8 +110,6 @@ def main(data: dict):
     if data.reset_folders:
         reset_folders(file_manager, data, logger)
 
-
-"""
     # Load parcels from sample parquet file
     logger.info("Loading parcel data from sample file")
     df = gpd.read_parquet(sample_parquet).reset_index()
@@ -169,7 +141,7 @@ def main(data: dict):
     print(memmap[:2, :5, :3])
 
     logger.info("Processing pipeline completed successfully")
-"""
+
 
 if __name__ == "__main__":
     main()

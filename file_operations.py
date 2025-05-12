@@ -106,13 +106,14 @@ class FileManager:
         return memmap
 
     def clear_folder(self, folder_path: Path):
-        if folder_path.exists():
-            self.logger.info(f"Clearing folder: {folder_path}")
-            for item in folder_path.iterdir():
-                if item.is_file():
-                    item.unlink()
-                elif item.is_dir():
-                    self.clear_folder(Path(item))
-            os.rmdir(folder_path)
-        else:
+        if not folder_path.exists():
             self.logger.warning(f"Folder {folder_path} does not exist")
+            return
+
+        self.logger.info(f"Clearing folder: {folder_path}")
+        for item in folder_path.iterdir():
+            if item.is_file():
+                item.unlink()
+            elif item.is_dir():
+                self.clear_folder(Path(item))
+        os.rmdir(folder_path)

@@ -20,6 +20,12 @@ from earth_engine import EarthEngineClient
 from file_operations import FileManager
 
 
+class InfoOnlyFilter(logging.Filter):
+    def filter(self, record):
+        # Allow only INFO-level messages
+        return record.levelno == logging.INFO or record.levelno == logging.ERROR
+
+
 def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
     """
     Configure logging for the application.
@@ -43,6 +49,7 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
+    stream_handler.addFilter(InfoOnlyFilter())
     logger.addHandler(stream_handler)
 
     file_handler = logging.FileHandler(log_file)
@@ -84,6 +91,12 @@ def main(data: dict):
 
     # Generate date range for the full year
     dates = pd.date_range(data.default.start, data.default.end, freq="D", name="doa")
+
+    if not data.default.ee_project_name:
+        logger.error(
+            "earth engine project name is required (ee-project-name=your_project_name)"
+        )
+        return
 
     # Initialize EarthEngineClient, DataProcessor, and FileManager classes
     logger.info("Initializing classes")

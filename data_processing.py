@@ -290,9 +290,6 @@ class DataProcessor:
                 self.logger.info("Ignoring Pool cleanup AttributeError")
             else:
                 raise
-        except Exception as e:
-            self.logger.error(f"Unexpected error during processing: {e}")
-            raise
         finally:
             self.logger.info(f"Processing completed for {len(df)} parcels")
             pool.close()

@@ -56,24 +56,9 @@ class FileManager:
         # Ensure output directory exists
         os.makedirs(output_path, exist_ok=True)
 
-        try:
-            # Save files
-            df.to_file(shapefile_path, driver="ESRI Shapefile")
-            df.to_parquet(parquet_path)
-        except FileNotFoundError as e:
-            self.logger.error(f"File or directory not found: {e}")
-            raise
-        except PermissionError as e:
-            self.logger.error(
-                f"Permission denied while accessing file or directory: {e}"
-            )
-            raise
-        except ValueError as e:
-            self.logger.error(f"Value error while saving files: {e}")
-            raise
-        except Exception as e:
-            self.logger.error(f"Unexpected error while saving files: {e}")
-            raise
+        # Save files
+        df.to_file(shapefile_path, driver="ESRI Shapefile")
+        df.to_parquet(parquet_path)
 
         return df
 
@@ -105,16 +90,12 @@ class FileManager:
         # Create memory-mapped array from generator
         from tqdm.autonotebook import tqdm
 
-        try:
-            self.logger.info(f"Creating memory-mapped array from {len(df)} parcels")
-            mmap_ninja.np_from_generator(
-                out_dir=output_folder,
-                sample_generator=map(get_array, tqdm(range(len(df)))),
-                batch_size=16384,
-            )
-        except Exception as e:
-            self.logger.error(f"Unexpected error while creating memmap: {e}")
-            raise
+        self.logger.info(f"Creating memory-mapped array from {len(df)} parcels")
+        mmap_ninja.np_from_generator(
+            out_dir=output_folder,
+            sample_generator=map(get_array, tqdm(range(len(df)))),
+            batch_size=16384,
+        )
 
         # Open and verify the created memory-mapped array
         memmap = mmap_ninja.np_open_existing(output_folder)

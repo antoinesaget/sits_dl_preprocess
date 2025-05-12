@@ -113,7 +113,7 @@ class EarthEngineClient:
 
         while True:
             if steps < 4:
-                self.logger.error(
+                self.logger.debug(
                     f"Parcel {parcel_id} too large to process. Skipping..."
                 )
                 break
@@ -159,11 +159,11 @@ class EarthEngineClient:
                     time.sleep(1)
                     continue
 
-                self.logger.error(f"Earth Engine error for parcel {parcel_id}: {e}")
+                self.logger.warning(f"Earth Engine error for parcel {parcel_id}: {e}")
                 break
 
             except Exception as e:
-                self.logger.error(
+                self.logger.warning(
                     f"Unexpected error processing parcel {parcel_id}: {e}"
                 )
                 break

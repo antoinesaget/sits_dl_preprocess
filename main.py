@@ -56,6 +56,12 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
     return logger
 
 
+def reset_folders(file_manager: FileManager, data: dict, logger: logging.Logger):
+    logger.info(f"Resetting folders: {data.folders_to_reset}")
+    for folder in data.folders_to_reset:
+        file_manager.clear_folder(Path(folder))
+
+
 @hydra.main(version_base=None, config_path="", config_name="config")
 def main(data: dict):
     """
@@ -100,6 +106,9 @@ def main(data: dict):
         ee_client,
     )
     file_manager = FileManager(logger, processed_arrays_folder)
+
+    if data.reset_folders:
+        reset_folders(file_manager, data, logger)
 
     # Load parcels from sample parquet file
     logger.info("Loading parcel data from sample file")

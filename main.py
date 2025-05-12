@@ -11,9 +11,9 @@ import logging
 import os
 from pathlib import Path
 
+import geopandas as gpd
 import hydra
 import pandas as pd
-import geopandas as gpd
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient

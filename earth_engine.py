@@ -11,19 +11,24 @@ from data_processing import DataProcessor
 
 
 class EarthEngineClient:
-    def __init__(self):
+    def __init__(self, logger: Logger, config: dict, all_bands: list):
         """
         Initialize the EarthEngineClient class.
         This class is responsible for interacting with Google Earth Engine
+        Args:
+            logger: Logger object for recording status
+            config: Configuration dictionary
+            all_bands: List of bands to retrieve from the satellite imagery
         """
-        pass
+        self.logger = logger
+        self.config = config
+        self.all_bands = all_bands
 
-    def initialize_earth_engine(self, logger: Logger, project_name: str) -> None:
+    def initialize_earth_engine(self, project_name: str) -> None:
         """
         Initialize Google Earth Engine with authentication if needed.
 
         Args:
-            logger: Logger object for recording status
             project_name: Google Earth Engine project name
         """
         try:
@@ -31,9 +36,9 @@ class EarthEngineClient:
                 opt_url="https://earthengine-highvolume.googleapis.com",
                 project=project_name,
             )
-            logger.info("Earth Engine initialized successfully")
+            self.logger.info("Earth Engine initialized successfully")
         except Exception as e:
-            logger.warning(
+            self.logger.warning(
                 f"Initial EE initialization failed, attempting authentication: {e}"
             )
             ee.Authenticate()
@@ -41,7 +46,7 @@ class EarthEngineClient:
                 opt_url="https://earthengine-highvolume.googleapis.com",
                 project=project_name,
             )
-            logger.info("Earth Engine initialized after authentication")
+            self.logger.info("Earth Engine initialized after authentication")
 
     def shapely2ee(self, geometry: shapely.Geometry) -> ee.Geometry:
         """
@@ -56,15 +61,7 @@ class EarthEngineClient:
         pt_list = list(zip(*geometry.exterior.coords.xy))
         return ee.Geometry.Polygon(pt_list)
 
-    def query(
-        self,
-        region: ee.Geometry,
-        start: str,
-        end: str,
-        collection: str,
-        scale: int,
-        all_bands: list,
-    ) -> list:
+    def query(self, region: ee.Geometry, start: str, end: str) -> list:
         """
         Query Earth Engine for satellite imagery.
 
@@ -72,35 +69,26 @@ class EarthEngineClient:
             region: Earth Engine geometry
             start: Start date (YYYY-MM-DD)
             end: End date (YYYY-MM-DD)
-            collection: Earth Engine collection name
-            scale: Pixel scale in meters
-            all_bands: List of bands
 
         Returns:
             List of image data
         """
         images = (
-            ee.ImageCollection(collection)
+            ee.ImageCollection(self.config.collection)
             .filterDate(start, end)
             .filterBounds(region)
             .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
-            .select(all_bands)
+            .select(self.all_bands)
         )
 
         sampled_points = ee.FeatureCollection.randomPoints(
             **{"region": region, "points": 200, "seed": 42}
         )
 
-        return images.getRegion(sampled_points, scale).getInfo()
+        return images.getRegion(sampled_points, self.config.scale).getInfo()
 
     def retrieve_data(
-        self,
-        region: ee.Geometry,
-        row: pd.DataFrame,
-        config: dict,
-        logger: Logger,
-        processor: DataProcessor,
-        all_bands: list,
+        self, region: ee.Geometry, row: pd.DataFrame, processor: DataProcessor
     ) -> pd.DataFrame:
         """
         Retrieve satellite data from Earth Engine with automatic retry for large areas.
@@ -108,46 +96,36 @@ class EarthEngineClient:
         Args:
             region: Earth Engine geometry
             row: DataFrame row containing parcel info
-            config: Configuration dictionary
-            logger: Logger object
             processor: DataProcessor object
-            all_bands: List of bands to retrieve
 
         Returns:
             pd.DataFrame: Downloaded satellite data
         """
         retry = False
-        steps = config["steps"]
+        steps = self.config.steps
         parcel_id = row["ID_PARCEL"]
 
         while True:
             if steps < 4:
-                logger.error(f"Parcel {parcel_id} too large to process. Skipping...")
+                self.logger.error(
+                    f"Parcel {parcel_id} too large to process. Skipping..."
+                )
                 break
 
             try:
                 if retry:
                     # Try with smaller time windows
                     starts, ends = processor.get_time_windows(
-                        config["start"], config["end"], steps
+                        self.config.start, self.config.end, steps
                     )
                     dataframe = pd.DataFrame()
-                    logger.debug(
+                    self.logger.debug(
                         f"Retrying with {len(starts)} time steps for parcel {parcel_id}"
                     )
 
                     for _start, _end in zip(starts, ends):
-                        getinfo_dict = self.query(
-                            region,
-                            _start,
-                            _end,
-                            config["collection"],
-                            config["scale"],
-                            all_bands,
-                        )
-                        dataframe_local = processor.parse(
-                            getinfo_dict, config["columns_types"], all_bands
-                        )
+                        getinfo_dict = self.query(region, _start, _end)
+                        dataframe_local = processor.parse(getinfo_dict)
                         if len(dataframe_local) > 0:
                             dataframe = pd.concat([dataframe, dataframe_local])
 
@@ -155,38 +133,33 @@ class EarthEngineClient:
                 else:
                     # Try with one large time window
                     getinfo_dict = self.query(
-                        region,
-                        config["start"],
-                        config["end"],
-                        config["collection"],
-                        config["scale"],
-                        all_bands,
+                        region, self.config.start, self.config.end
                     )
-                    dataframe = processor.parse(
-                        getinfo_dict, config["columns_types"], all_bands
-                    )
+                    dataframe = processor.parse(getinfo_dict)
                     return dataframe
 
             except ee.ee_exception.EEException as e:
                 if "ImageCollection.getRegion: Too many values:" in str(e):
                     if retry:
                         steps = steps // 2
-                        logger.debug(
+                        self.logger.debug(
                             f"Reducing steps to {steps} for parcel {parcel_id}"
                         )
                     retry = True
                     continue
 
                 if "Too Many Requests" in str(e):
-                    logger.debug("Rate limit hit, waiting 1 second...")
+                    self.logger.debug("Rate limit hit, waiting 1 second...")
                     time.sleep(1)
                     continue
 
-                logger.error(f"Earth Engine error for parcel {parcel_id}: {e}")
+                self.logger.error(f"Earth Engine error for parcel {parcel_id}: {e}")
                 break
 
             except Exception as e:
-                logger.error(f"Unexpected error processing parcel {parcel_id}: {e}")
+                self.logger.error(
+                    f"Unexpected error processing parcel {parcel_id}: {e}"
+                )
                 break
 
         return pd.DataFrame()

@@ -79,22 +79,13 @@ class EarthEngineClient:
         Returns:
             List of image data
         """
-        try:
-            images = (
-                ee.ImageCollection(self.config.collection)
-                .filterDate(start, end)
-                .filterBounds(region)
-                .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
-                .select(self.all_bands)
-            )
-        except ee.ee_exception.EEException as e:
-            self.logger.error(
-                f"Earth Engine error while filtering image collection: {e}"
-            )
-            raise
-        except Exception as e:
-            self.logger.error(f"Unexpected error while querying Earth Engine: {e}")
-            raise
+        images = (
+            ee.ImageCollection(self.config.collection)
+            .filterDate(start, end)
+            .filterBounds(region)
+            .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
+            .select(self.all_bands)
+        )
 
         sampled_points = ee.FeatureCollection.randomPoints(
             **{"region": region, "points": 200, "seed": 42}
@@ -122,7 +113,7 @@ class EarthEngineClient:
 
         while True:
             if steps < 4:
-                self.logger.error(
+                self.logger.debug(
                     f"Parcel {parcel_id} too large to process. Skipping..."
                 )
                 break
@@ -168,11 +159,11 @@ class EarthEngineClient:
                     time.sleep(1)
                     continue
 
-                self.logger.error(f"Earth Engine error for parcel {parcel_id}: {e}")
+                self.logger.warning(f"Earth Engine error for parcel {parcel_id}: {e}")
                 break
 
             except Exception as e:
-                self.logger.error(
+                self.logger.warning(
                     f"Unexpected error processing parcel {parcel_id}: {e}"
                 )
                 break

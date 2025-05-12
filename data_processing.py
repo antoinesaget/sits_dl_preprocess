@@ -222,7 +222,7 @@ class DataProcessor:
             raw_df = self.ee_client.retrieve_data(region, row, self)
 
             # Process data
-            processed_array = self.process_dataframe(raw_df, self.dates, int(index))
+            processed_array = self.process_dataframe(raw_df, int(index))
             if processed_array is None:
                 self.logger.error(f"Processing failed for parcel {row['ID_PARCEL']}")
                 return False

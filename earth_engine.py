@@ -41,12 +41,18 @@ class EarthEngineClient:
             self.logger.warning(
                 f"Initial EE initialization failed, attempting authentication: {e}"
             )
-            ee.Authenticate()
-            ee.Initialize(
-                opt_url="https://earthengine-highvolume.googleapis.com",
-                project=project_name,
-            )
-            self.logger.info("Earth Engine initialized after authentication")
+            try:
+                ee.Authenticate()
+                ee.Initialize(
+                    opt_url="https://earthengine-highvolume.googleapis.com",
+                    project=project_name,
+                )
+                self.logger.info("Earth Engine initialized after authentication")
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize Earth Engine after authentication: {e}"
+                )
+                raise
 
     def shapely2ee(self, geometry: shapely.Geometry) -> ee.Geometry:
         """
@@ -107,7 +113,7 @@ class EarthEngineClient:
 
         while True:
             if steps < 4:
-                self.logger.error(
+                self.logger.debug(
                     f"Parcel {parcel_id} too large to process. Skipping..."
                 )
                 break
@@ -153,11 +159,11 @@ class EarthEngineClient:
                     time.sleep(1)
                     continue
 
-                self.logger.error(f"Earth Engine error for parcel {parcel_id}: {e}")
+                self.logger.warning(f"Earth Engine error for parcel {parcel_id}: {e}")
                 break
 
             except Exception as e:
-                self.logger.error(
+                self.logger.warning(
                     f"Unexpected error processing parcel {parcel_id}: {e}"
                 )
                 break

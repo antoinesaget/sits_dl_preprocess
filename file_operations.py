@@ -57,7 +57,6 @@ class FileManager:
         os.makedirs(output_path, exist_ok=True)
 
         # Save files
-
         df.to_file(shapefile_path, driver="ESRI Shapefile")
         df.to_parquet(parquet_path)
 
@@ -117,3 +116,9 @@ class FileManager:
             elif item.is_dir():
                 self.clear_folder(Path(item))
         os.rmdir(folder_path)
+
+
+    def reset_folders(self, data: dict, logger: Logger):
+        logger.info(f"Resetting folders: {data.folders_to_reset}")
+        for folder in data.folders_to_reset:
+            self.clear_folder(Path(folder))

@@ -114,13 +114,13 @@ class DataProcessor:
             numpy.ndarray: Processed array or None if processing failed
         """
         if len(df) == 0:
-            self.logger.error(f"Empty dataframe received for parcel {parcel_id}")
+            self.logger.warning(f"Empty dataframe received for parcel {parcel_id}")
             return None
 
         # Calculate number of unique points
         n_points = df.groupby(["longitude", "latitude"]).ngroup().nunique()
         if n_points < self.data.points:
-            self.logger.error(
+            self.logger.warning(
                 f"Insufficient unique points ({n_points}/{self.data.points}) for parcel {parcel_id}"
             )
             return None
@@ -186,7 +186,7 @@ class DataProcessor:
         nb_dates = round(diff / self.data.days_interval)
         expected_rows = nb_dates * self.data.points
         if len(df) != expected_rows:
-            self.logger.error(
+            self.logger.warning(
                 f"Final shape mismatch for parcel {parcel_id}. Expected {expected_rows}, got {len(df)}"
             )
             return None
@@ -224,7 +224,7 @@ class DataProcessor:
             # Process data
             processed_array = self.process_dataframe(raw_df, int(index))
             if processed_array is None:
-                self.logger.error(f"Processing failed for parcel {row['ID_PARCEL']}")
+                self.logger.warning(f"Processing failed for parcel {row['ID_PARCEL']}")
                 return False
             else:
                 os.makedirs(os.path.dirname(outfile), exist_ok=True)
@@ -232,7 +232,7 @@ class DataProcessor:
                 return True
 
         except Exception as e:
-            self.logger.error(f"Error processing parcel {index}: {e}")
+            self.logger.warning(f"Error processing parcel {index}: {e}")
             return False
 
     def worker_wrapper(self, args: tuple) -> bool:
@@ -277,9 +277,7 @@ class DataProcessor:
         # Use functools.partial to create a function with fixed arguments except the first one
         import functools
 
-        worker_func = functools.partial(
-            self.worker_wrapper,
-        )
+        worker_func = functools.partial(self.worker_wrapper)
 
         try:
             with progress:
@@ -289,10 +287,11 @@ class DataProcessor:
         except AttributeError as e:
             if "'NoneType' object has no attribute 'dumps'" in str(e):
                 # This error occurs during Pool cleanup and can be safely ignored
-                self.logger.info("Ignoring Pool cleanup AttributeError")
+                self.logger.warning("Ignoring Pool cleanup AttributeError")
             else:
                 raise
         finally:
+            self.logger.info(f"Processing completed for {len(df)} parcels")
             pool.close()
             pool.join()
 

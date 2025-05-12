@@ -7,34 +7,20 @@ processes it into a standardized format, and saves it as memory-mapped arrays
 for efficient access.
 """
 
-import argparse
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 
 import geopandas as gpd
+import hydra
 import pandas as pd
-import yaml
 
 from data_processing import DataProcessor
 from earth_engine import EarthEngineClient
 from file_operations import FileManager
 
-with open("config.yaml", "r") as config_file:
-    config = yaml.safe_load(config_file)
 
-# Band definitions
-RADIOMETRIC_BANDS = config["bands"]["radiometric_bands"]
-MISC_BANDS = config["bands"]["misc_bands"]
-ALL_BANDS = RADIOMETRIC_BANDS + MISC_BANDS
-
-# Default configuration
-DEFAULT_CONFIG = config["default"]
-DEFAULT_DIRECTORY_PATHS = config["paths"]
-
-
-def setup_logging(log_file="download_process.log"):
+def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
     """
     Configure logging for the application.
 
@@ -70,77 +56,13 @@ def setup_logging(log_file="download_process.log"):
     return logger
 
 
-def validate_data():
-    # Parse dates into datetime objects
-    start = datetime.strptime(DEFAULT_CONFIG["start"], "%Y-%m-%d").date()
-    filter_start = datetime.strptime(DEFAULT_CONFIG["filter_start"], "%Y-%m-%d").date()
-    end = datetime.strptime(DEFAULT_CONFIG["end"], "%Y-%m-%d").date()
-    filter_end = datetime.strptime(DEFAULT_CONFIG["filter_end"], "%Y-%m-%d").date()
-    area_min = DEFAULT_CONFIG["area_min"]
-    area_max = DEFAULT_CONFIG["area_max"]
-
-    # Validate date ranges
-    if start > end:
-        raise ValueError("Start date must be earlier than end date.")
-    if filter_start > filter_end:
-        raise ValueError("Filter start date must be earlier than filter end date.")
-    if start > filter_start:
-        raise ValueError(
-            "Start date must be earlier or equal to the filter_start date."
-        )
-    if end < filter_end:
-        raise ValueError("End date must be later or equal to the filter_end date.")
-    if (area_min < 0) or (area_max < 0):
-        raise ValueError("Area min and max must be non-negative.")
-    if area_min > area_max:
-        raise ValueError("Area min must be less than or equal to area max.")
-
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(
-        description="Satellite imagery processing pipeline"
-    )
-    parser.add_argument(
-        "--current_dir",
-        default=DEFAULT_DIRECTORY_PATHS["current_dir"],
-        help="Base directory",
-    )
-    parser.add_argument(
-        "--sample_parquet",
-        default=DEFAULT_DIRECTORY_PATHS["sample_parquet"],
-        help="Path to sample parquet file",
-    )
-    parser.add_argument(
-        "--processed_arrays_folder",
-        default=DEFAULT_DIRECTORY_PATHS["processed_arrays_folder"],
-        help="Folder for processed arrays",
-    )
-    parser.add_argument(
-        "--memmap_folder",
-        default=DEFAULT_DIRECTORY_PATHS["memmap_folder"],
-        help="Folder for memory-mapped arrays",
-    )
-    parser.add_argument(
-        "--filtered_folder",
-        default=DEFAULT_DIRECTORY_PATHS["filtered_folder"],
-        help="Folder for filtered shapefiles",
-    )
-    parser.add_argument(
-        "--filtered_shp_path",
-        default=DEFAULT_DIRECTORY_PATHS["filtered_shp_path"],
-        help="Path to filtered shapefile",
-    )
-    return parser.parse_args()
-
-
-def main():
-    """Main function to execute the download and processing pipeline."""
-
-    # Parse command-line arguments
-    args = parse_arguments()
-
-    # Validate configuration data
-    validate_data()
+@hydra.main(version_base=None, config_path="", config_name="config")
+def main(data: dict):
+    """
+    Main function to execute the download and processing pipeline.
+    Args:
+        data: Configuration data loaded with Hydra from config.yaml
+    """
 
     # Setup logging
     logger = setup_logging()
@@ -148,17 +70,18 @@ def main():
     logger.info("Initializing classes")
     # Initialize EarthEngineClient, DataProcessor, and FileManager classes
     ee_client = EarthEngineClient()
-    ee_client.initialize_earth_engine(logger, DEFAULT_CONFIG["ee_project_name"])
-    processor = DataProcessor(DEFAULT_CONFIG)
+    ee_client.initialize_earth_engine(logger, data.default.ee_project_name)
+    processor = DataProcessor(data.default)
     file_manager = FileManager()
 
     # Define paths - using sample parquet file
-    current_dir = Path(args.current_dir)
-    sample_parquet = current_dir / args.sample_parquet
-    processed_arrays_folder = current_dir / args.processed_arrays_folder
-    memmap_folder = current_dir / args.memmap_folder
-    filtered_folder = current_dir / args.filtered_folder
-    filtered_shp_path = current_dir / args.filtered_shp_path
+    current_dir = Path(data.paths.current_dir)
+    polygons_processed_folder = current_dir / data.paths.polygons_processed_folder
+    sample_parquet = current_dir / data.paths.sample_parquet
+    processed_arrays_folder = current_dir / data.paths.processed_arrays_folder
+    memmap_folder = current_dir / data.paths.memmap_folder
+    filtered_folder = current_dir / data.paths.filtered_folder
+    filtered_shp_path = current_dir / data.paths.filtered_shp_path
 
     # Create necessary directories
     os.makedirs(processed_arrays_folder, exist_ok=True)
@@ -166,9 +89,7 @@ def main():
     os.makedirs(filtered_folder, exist_ok=True)
 
     # Generate date range for the full year
-    dates = pd.date_range(
-        DEFAULT_CONFIG["start"], DEFAULT_CONFIG["end"], freq="D", name="doa"
-    )
+    dates = pd.date_range(data.default.start, data.default.end, freq="D", name="doa")
 
     # Load parcels from sample parquet file
     logger.info("Loading parcel data from sample file")
@@ -176,9 +97,7 @@ def main():
 
     # Filter by area
     logger.info("Filtering parcels by area")
-    df = processor.filter_by_area(
-        df, DEFAULT_CONFIG["area_min"], DEFAULT_CONFIG["area_max"]
-    )
+    df = processor.filter_by_area(df, data.default.area_min, data.default.area_max)
     print(df.head())
 
     # Save filtered shapefile
@@ -191,19 +110,19 @@ def main():
     # Process parcels
     processor.process_parcels(
         df,
-        DEFAULT_CONFIG,
+        data.default,
         processed_arrays_folder,
         dates,
         logger,
         ee_client,
-        RADIOMETRIC_BANDS,
-        ALL_BANDS,
+        list(data.bands.radiometric_bands),
+        list(data.bands.radiometric_bands + data.bands.misc_bands),
     )
 
     # Filter and save valid parcels
     logger.info(f"Filtering and saving valid parcels to {processed_arrays_folder}")
     df = file_manager.filter_and_save_valid_parcels(
-        df, processed_arrays_folder, current_dir, logger
+        df, processed_arrays_folder, polygons_processed_folder, logger
     )
 
     # Create memory-mapped array

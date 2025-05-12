@@ -1,3 +1,4 @@
+# It is recommended not to change the default collection, nor the bands or columns types.
 default:
   start: "2022-01-01" # Start date for the analysis, format YYYY-MM-DD
   end: "2022-12-31" # End date for the analysis, format YYYY-MM-DD
@@ -23,8 +24,9 @@ default:
   area_max: 40  # Maximum parcel area in hectares
   filter_start: "2022-02-01" # Start date for filtering, format YYYY-MM-DD
   filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
-  ee_project_name: "ee-magzoumov" # Earth Engine project name
+  ee_project_name: null # Earth Engine project name
   days_interval: 5 # Sample every 5th date
+  points: 100 # Number of points for each parcel
 bands:
   radiometric_bands:
   - B1
@@ -56,3 +58,4 @@ paths:
   memmap_folder: "out_memmap" # Folder to save memmap arrays
   filtered_folder: "filtered" # Folder to save filtered arrays
   filtered_shp_path: "filtered/polygons_filtered.shp" # Path to the filtered shapefile
+  polygons_processed_folder: "polygons_processed" # Folder to save processed polygons files

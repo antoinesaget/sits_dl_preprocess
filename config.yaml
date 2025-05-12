@@ -60,4 +60,4 @@ paths:
   filtered_shp_path: "filtered/polygons_filtered.shp" # Path to the filtered shapefile
   polygons_processed_folder: "polygons_processed" # Folder to save processed polygons files
 reset_folders: false # Whether to reset folders
-folders_to_reset: # List of folders to reset
+folders_to_reset: ["${paths.processed_arrays_folder}"] # List of folders to reset

@@ -67,6 +67,7 @@ class FileManager:
         self,
         df: gpd.GeoDataFrame,
         output_folder: str,
+        logger: Logger,
     ) -> np.memmap:
         """
         Convert individual .npy files to a memory-mapped array.
@@ -76,7 +77,7 @@ class FileManager:
             output_folder: Folder to save memory-mapped files
 
         Returns:
-            mmap_ninja.NpMemmap: Memory-mapped array
+            np.memmap: Memory-mapped array
         """
         self.logger.info("Starting memmap conversion")
 

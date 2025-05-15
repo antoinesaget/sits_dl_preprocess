@@ -54,7 +54,6 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
 
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.WARNING)
     logger.addHandler(file_handler)
 
     # Remove previous basic config

@@ -100,7 +100,7 @@ def main(data: dict):
     # Initialize EarthEngineClient, DataProcessor, and FileManager classes
     logger.info("Initializing classes")
     ee_client = EarthEngineClient(
-        logger, data.list(data.bands.radiometric_bands + data.bands.misc_bands)
+        logger, data, list(data.bands.radiometric_bands + data.bands.misc_bands)
     )
     ee_client.initialize_earth_engine(data.ee_project_name)
     processor = DataProcessor(

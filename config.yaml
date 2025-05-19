@@ -27,7 +27,7 @@ filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
 ee_project_name: null # Earth Engine project name
 days_interval: 5 # Sample every 5th date
 points: 100 # Number of points for each parcel
-clouds_threshold: 5 # Threshold for clouds probability
+clouds_threshold: 5 # Threshold for clouds probability (out of 100), careful not to set it too low as it may lead to a low number of arrays
 bands:
   radiometric_bands:
   - B1

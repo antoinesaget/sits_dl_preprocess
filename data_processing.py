@@ -68,7 +68,9 @@ class DataProcessor:
             dataframe = dataframe[dataframe["TILE"] == tile]
 
         # Select and process columns
-        dataframe = dataframe[["id", "longitude", "latitude", "time"] + self.all_bands]
+        dataframe = dataframe[
+            ["id", "longitude", "latitude", "time", "CLOUD_PROB"] + self.all_bands
+        ]
         dataframe[self.all_bands] = dataframe[self.all_bands].astype(float)
         dataframe.reset_index(drop=True, inplace=True)
         dataframe.fillna(-1, inplace=True)
@@ -77,7 +79,8 @@ class DataProcessor:
         for column, dtype in self.data.columns_types.items():
             if column in dataframe.columns:
                 dataframe[column] = dataframe[column].astype(dtype)
-
+        if "CLOUD_PROB" in dataframe.columns:
+            dataframe["CLOUD_PROB"] = dataframe["CLOUD_PROB"].astype("int8")
         return dataframe.reset_index(drop=True)
 
     def get_time_windows(self, start_date: str, end_date: str, steps: int) -> tuple:
@@ -138,17 +141,24 @@ class DataProcessor:
         df = df.loc[ids]
 
         # Keep only needed bands and add NDVI
-        df = df[self.radiometric_bands + ["MSK_CLDPRB", "SCL"]]
+        df = df[self.radiometric_bands + ["MSK_CLDPRB", "CLOUD_PROB", "SCL"]]
         df["NDVI"] = (df["B8"] - df["B4"]) / (df["B8"] + df["B4"])
 
         # Clean data: remove invalid values, cloudy pixels, and poor quality data
         df = df[~df.isna().any(axis=1)]
         df = df[~df.isin([-1]).any(axis=1)]
         df = df[df["MSK_CLDPRB"] == 0]
+        df = df[df["CLOUD_PROB"] < self.data.clouds_threshold]
         df = df[~df["SCL"].isin([3, 7, 8, 9, 10, 11])]  # Filter out low quality pixels
-        df = df.drop(columns=["MSK_CLDPRB", "SCL"])
+        df = df.drop(columns=["MSK_CLDPRB", "CLOUD_PROB", "SCL"])
         df = df[~df.index.duplicated(keep="first")]
         df = df.reset_index(level=1)
+
+        if df.empty:
+            self.logger.warning(
+                f"Empty dataframe after filtering for parcel {parcel_id}"
+            )
+            return None
 
         # Convert types and interpolate missing values
         df[self.radiometric_bands + ["NDVI"]] = df[
@@ -164,12 +174,18 @@ class DataProcessor:
                 .iloc[:: self.data.days_interval, :]  # Sample every 5th date
             )
         )
-
         # Filter to desired date range
-        df = df[
-            (df.index.get_level_values(1) >= self.data.filter_start)
-            & (df.index.get_level_values(1) <= self.data.filter_end)
-        ]
+        if df.index.nlevels == 2:
+            df = df[
+                (df.index.get_level_values(1) >= self.data.filter_start)
+                & (df.index.get_level_values(1) <= self.data.filter_end)
+            ]
+        else:
+            df = df.reset_index()
+            df = df[
+                (df["doa"] >= self.data.filter_start)
+                & (df["doa"] <= self.data.filter_end)
+            ]
 
         # Add ID_RPG and convert types
         df["ID_RPG"] = pracel_index
@@ -236,7 +252,7 @@ class DataProcessor:
                 return True
 
         except Exception as e:
-            self.logger.warning(f"Error processing parcel {index}: {e}")
+            self.logger.warning(f"Error processing parcel {row['ID_PARCEL']}: {e}")
             return False
 
     def worker_wrapper(self, args: tuple) -> bool:

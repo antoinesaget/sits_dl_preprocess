@@ -87,11 +87,32 @@ class EarthEngineClient:
             .select(self.all_bands)
         )
 
+        clouds = (
+            ee.ImageCollection(self.config.clouds_collection)
+            .filterDate(start, end)
+            .filterBounds(region)
+        )
+
+        def add_cloud_prob(img):
+            cloud_mask = ee.Image(img.get("cloud_mask"))
+            cloud_prob = cloud_mask.select("probability").rename("CLOUD_PROB")
+            return img.addBands(cloud_prob)
+
+        s2SrWithCloudMask = ee.Join.saveFirst("cloud_mask").apply(
+            primary=images,
+            secondary=clouds,
+            condition=ee.Filter.equals(
+                leftField="system:index", rightField="system:index"
+            ),
+        )
+
+        s2SrWithProbBands = ee.ImageCollection(s2SrWithCloudMask).map(add_cloud_prob)
+
         sampled_points = ee.FeatureCollection.randomPoints(
             **{"region": region, "points": 200, "seed": 42}
         )
 
-        return images.getRegion(sampled_points, self.config.scale).getInfo()
+        return s2SrWithProbBands.getRegion(sampled_points, self.config.scale).getInfo()
 
     def retrieve_data(
         self, region: ee.Geometry, row: pd.DataFrame, processor: DataProcessor

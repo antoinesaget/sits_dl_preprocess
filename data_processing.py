@@ -146,9 +146,7 @@ class DataProcessor:
         df = df[df["MSK_CLDPRB"] == 0]
         df = df[~df["SCL"].isin([3, 7, 8, 9, 10, 11])]  # Filter out low quality pixels
 
-        self.logger.warning(f"before for parcel {parcel_id}: {df.head()}")
         df = df[df["CLOUD_PROB"] <= self.data.clouds_threshold]
-        self.logger.warning(f"after for parcel {parcel_id}: {df.head()}")
 
         df = df.drop(columns=["MSK_CLDPRB", "CLOUD_PROB", "SCL"])
         df = df[~df.index.duplicated(keep="first")]

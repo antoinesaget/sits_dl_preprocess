@@ -7,6 +7,7 @@ scale: 10
 columns_types:
   SCL: category
   MSK_CLDPRB: int8
+  CLOUD_PROB: int8
   B1: int16
   B2: int16
   B3: int16
@@ -49,6 +50,7 @@ bands:
   - TCI_R
   - TCI_G
   - TCI_B
+  - CLOUD_PROB
   - MSK_CLDPRB
   - MSK_SNWPRB
   - QA60

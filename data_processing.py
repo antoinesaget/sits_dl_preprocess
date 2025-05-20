@@ -77,7 +77,6 @@ class DataProcessor:
         for column, dtype in self.data.columns_types.items():
             if column in dataframe.columns:
                 dataframe[column] = dataframe[column].astype(dtype)
-
         return dataframe.reset_index(drop=True)
 
     def get_time_windows(self, start_date: str, end_date: str, steps: int) -> tuple:
@@ -136,7 +135,7 @@ class DataProcessor:
         df = df.loc[ids]
 
         # Keep only needed bands and add NDVI
-        df = df[self.radiometric_bands + ["MSK_CLDPRB", "SCL"]]
+        df = df[self.radiometric_bands + ["MSK_CLDPRB", "CLOUD_PROB", "SCL"]]
         df["NDVI"] = (df["B8"] - df["B4"]) / (df["B8"] + df["B4"])
 
         # Clean data: remove invalid values, cloudy pixels, and poor quality data
@@ -144,9 +143,18 @@ class DataProcessor:
         df = df[~df.isin([-1]).any(axis=1)]
         df = df[df["MSK_CLDPRB"] == 0]
         df = df[~df["SCL"].isin([3, 7, 8, 9, 10, 11])]  # Filter out low quality pixels
-        df = df.drop(columns=["MSK_CLDPRB", "SCL"])
+
+        df = df[df["CLOUD_PROB"] <= self.data.clouds_threshold]
+
+        df = df.drop(columns=["MSK_CLDPRB", "CLOUD_PROB", "SCL"])
         df = df[~df.index.duplicated(keep="first")]
         df = df.reset_index(level=1)
+
+        if df.empty:
+            self.logger.warning(
+                f"Empty dataframe after filtering for parcel {parcel_id}"
+            )
+            return None
 
         # Convert types and interpolate missing values
         df[self.radiometric_bands + ["NDVI"]] = df[
@@ -162,7 +170,6 @@ class DataProcessor:
                 .iloc[:: self.data.days_interval, :]  # Sample every 5th date
             )
         )
-
         # Filter to desired date range
         df = df[
             (df.index.get_level_values(1) >= self.data.filter_start)
@@ -222,7 +229,7 @@ class DataProcessor:
             raw_df = self.ee_client.retrieve_data(region, row, self)
 
             # Process data
-            processed_array = self.process_dataframe(raw_df, int(index))
+            processed_array = self.process_dataframe(raw_df, row["ID_PARCEL"])
             if processed_array is None:
                 self.logger.warning(f"Processing failed for parcel {row['ID_PARCEL']}")
                 return False
@@ -232,7 +239,7 @@ class DataProcessor:
                 return True
 
         except Exception as e:
-            self.logger.warning(f"Error processing parcel {index}: {e}")
+            self.logger.warning(f"Error processing parcel {row['ID_PARCEL']}: {e}")
             return False
 
     def worker_wrapper(self, args: tuple) -> bool:

@@ -54,7 +54,6 @@ def setup_logging(log_file: str = "download_process.log") -> logging.Logger:
 
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.WARNING)
     logger.addHandler(file_handler)
 
     # Remove previous basic config
@@ -76,13 +75,13 @@ def main(data: dict):
     logger = setup_logging()
 
     # Define paths - using sample parquet file
-    current_dir = Path(data.paths.current_dir)
-    polygons_processed_folder = current_dir / data.paths.polygons_processed_folder
-    sample_parquet = current_dir / data.paths.sample_parquet
-    processed_arrays_folder = current_dir / data.paths.processed_arrays_folder
-    memmap_folder = current_dir / data.paths.memmap_folder
-    filtered_folder = current_dir / data.paths.filtered_folder
-    filtered_shp_path = current_dir / data.paths.filtered_shp_path
+    current_dir = Path(data.current_dir)
+    polygons_processed_folder = current_dir / data.polygons_processed_folder
+    sample_parquet = current_dir / data.sample_parquet
+    processed_arrays_folder = current_dir / data.processed_arrays_folder
+    memmap_folder = current_dir / data.memmap_folder
+    filtered_folder = current_dir / data.filtered_folder
+    filtered_shp_path = current_dir / data.filtered_shp_path
 
     # Create necessary directories
     os.makedirs(processed_arrays_folder, exist_ok=True)
@@ -90,9 +89,9 @@ def main(data: dict):
     os.makedirs(filtered_folder, exist_ok=True)
 
     # Generate date range for the full year
-    dates = pd.date_range(data.default.start, data.default.end, freq="D", name="doa")
+    dates = pd.date_range(data.start, data.end, freq="D", name="doa")
 
-    if not data.default.ee_project_name:
+    if not data.ee_project_name:
         logger.error(
             "earth engine project name is required (ee-project-name=your_project_name)"
         )
@@ -101,12 +100,12 @@ def main(data: dict):
     # Initialize EarthEngineClient, DataProcessor, and FileManager classes
     logger.info("Initializing classes")
     ee_client = EarthEngineClient(
-        logger, data.default, list(data.bands.radiometric_bands + data.bands.misc_bands)
+        logger, data, list(data.bands.radiometric_bands + data.bands.misc_bands)
     )
-    ee_client.initialize_earth_engine(data.default.ee_project_name)
+    ee_client.initialize_earth_engine(data.ee_project_name)
     processor = DataProcessor(
         logger,
-        data.default,
+        data,
         list(data.bands.radiometric_bands),
         list(data.bands.radiometric_bands + data.bands.misc_bands),
         processed_arrays_folder,
@@ -124,7 +123,7 @@ def main(data: dict):
 
     # Filter by area
     logger.info("Filtering parcels by area")
-    df = processor.filter_by_area(df, data.default.area_min, data.default.area_max)
+    df = processor.filter_by_area(df, data.area_min, data.area_max)
     print(df.head())
 
     # Save filtered shapefile

@@ -62,12 +62,7 @@ class FileManager:
 
         return df
 
-    def create_memmap(
-        self,
-        df: gpd.GeoDataFrame,
-        output_folder: str,
-        logger: Logger,
-    ) -> np.memmap:
+    def create_memmap(self, df: gpd.GeoDataFrame, output_folder: str) -> np.memmap:
         """
         Convert individual .npy files to a memory-mapped array.
 
@@ -116,7 +111,6 @@ class FileManager:
             elif item.is_dir():
                 self.clear_folder(Path(item))
         os.rmdir(folder_path)
-
 
     def reset_folders(self, data: dict, logger: Logger):
         logger.info(f"Resetting folders: {data.folders_to_reset}")

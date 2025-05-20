@@ -1,32 +1,34 @@
 # It is recommended not to change the default collection, nor the bands or columns types.
-default:
-  start: "2022-01-01" # Start date for the analysis, format YYYY-MM-DD
-  end: "2022-12-31" # End date for the analysis, format YYYY-MM-DD
-  collection: COPERNICUS/S2_SR_HARMONIZED
-  scale: 10
-  columns_types:
-    SCL: category
-    MSK_CLDPRB: int8
-    B1: int16
-    B2: int16
-    B3: int16
-    B4: int16
-    B5: int16
-    B6: int16
-    B7: int16
-    B8: int16
-    B8A: int16
-    B9: int16
-    B11: int16
-    B12: int16
-  steps: 64
-  area_min: 0.1  # Minimum parcel area in hectares
-  area_max: 40  # Maximum parcel area in hectares
-  filter_start: "2022-02-01" # Start date for filtering, format YYYY-MM-DD
-  filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
-  ee_project_name: null # Earth Engine project name
-  days_interval: 5 # Sample every 5th date
-  points: 100 # Number of points for each parcel
+start: "2022-01-01" # Start date for the analysis, format YYYY-MM-DD
+end: "2022-12-31" # End date for the analysis, format YYYY-MM-DD
+collection: COPERNICUS/S2_SR_HARMONIZED
+clouds_collection: COPERNICUS/S2_CLOUD_PROBABILITY
+scale: 10
+columns_types:
+  SCL: category
+  MSK_CLDPRB: int8
+  CLOUD_PROB: int8
+  B1: int16
+  B2: int16
+  B3: int16
+  B4: int16
+  B5: int16
+  B6: int16
+  B7: int16
+  B8: int16
+  B8A: int16
+  B9: int16
+  B11: int16
+  B12: int16
+steps: 64
+area_min: 0.1  # Minimum parcel area in hectares
+area_max: 40  # Maximum parcel area in hectares
+filter_start: "2022-02-01" # Start date for filtering, format YYYY-MM-DD
+filter_end: "2022-11-30" # End date for filtering, format YYYY-MM-DD
+ee_project_name: null # Earth Engine project name
+days_interval: 5 # Sample every 5th date
+points: 100 # Number of points for each parcel
+clouds_threshold: 5 # Threshold for clouds probability (out of 100), careful not to set it too low as it may lead to a low number of arrays
 bands:
   radiometric_bands:
   - B1
@@ -48,16 +50,16 @@ bands:
   - TCI_R
   - TCI_G
   - TCI_B
+  - CLOUD_PROB
   - MSK_CLDPRB
   - MSK_SNWPRB
   - QA60
-paths:
-  current_dir: "." # Current working directory
-  sample_parquet: "sample_agricultural_parcels_10k.parquet" # Path to the sample parquet file
-  processed_arrays_folder: "processed_arrays" # Folder to save processed arrays
-  memmap_folder: "out_memmap" # Folder to save memmap arrays
-  filtered_folder: "filtered" # Folder to save filtered arrays
-  filtered_shp_path: "filtered/polygons_filtered.shp" # Path to the filtered shapefile
-  polygons_processed_folder: "polygons_processed" # Folder to save processed polygons files
+current_dir: "." # Current working directory
+sample_parquet: "sample_agricultural_parcels_10k.parquet" # Path to the sample parquet file
+processed_arrays_folder: "processed_arrays" # Folder to save processed arrays
+memmap_folder: "out_memmap" # Folder to save memmap arrays
+filtered_folder: "filtered" # Folder to save filtered arrays
+filtered_shp_path: "filtered/polygons_filtered.shp" # Path to the filtered shapefile
+polygons_processed_folder: "polygons_processed" # Folder to save processed polygons files
 reset_folders: false # Whether to reset folders
-folders_to_reset: ["${paths.processed_arrays_folder}"] # List of folders to reset
+folders_to_reset: ["${processed_arrays_folder}"] # List of folders to reset

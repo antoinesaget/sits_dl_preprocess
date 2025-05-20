@@ -68,9 +68,7 @@ class DataProcessor:
             dataframe = dataframe[dataframe["TILE"] == tile]
 
         # Select and process columns
-        dataframe = dataframe[
-            ["id", "longitude", "latitude", "time", "CLOUD_PROB"] + self.all_bands
-        ]
+        dataframe = dataframe[["id", "longitude", "latitude", "time"] + self.all_bands]
         dataframe[self.all_bands] = dataframe[self.all_bands].astype(float)
         dataframe.reset_index(drop=True, inplace=True)
         dataframe.fillna(-1, inplace=True)
@@ -79,8 +77,6 @@ class DataProcessor:
         for column, dtype in self.data.columns_types.items():
             if column in dataframe.columns:
                 dataframe[column] = dataframe[column].astype(dtype)
-        if "CLOUD_PROB" in dataframe.columns:
-            dataframe["CLOUD_PROB"] = dataframe["CLOUD_PROB"].astype("int8")
         return dataframe.reset_index(drop=True)
 
     def get_time_windows(self, start_date: str, end_date: str, steps: int) -> tuple:
@@ -106,7 +102,7 @@ class DataProcessor:
         return starts, ends
 
     def process_dataframe(
-        self, df: pd.DataFrame, parcel_id: int, pracel_index: int
+        self, df: pd.DataFrame, parcel_id: int, file_id: int
     ) -> np.ndarray:
         """
         Process the downloaded dataframe into the final array format.
@@ -148,8 +144,12 @@ class DataProcessor:
         df = df[~df.isna().any(axis=1)]
         df = df[~df.isin([-1]).any(axis=1)]
         df = df[df["MSK_CLDPRB"] == 0]
-        df = df[df["CLOUD_PROB"] < self.data.clouds_threshold]
         df = df[~df["SCL"].isin([3, 7, 8, 9, 10, 11])]  # Filter out low quality pixels
+
+        self.logger.warning(f"before for parcel {parcel_id}: {df.head()}")
+        df = df[df["CLOUD_PROB"] <= self.data.clouds_threshold]
+        self.logger.warning(f"after for parcel {parcel_id}: {df.head()}")
+
         df = df.drop(columns=["MSK_CLDPRB", "CLOUD_PROB", "SCL"])
         df = df[~df.index.duplicated(keep="first")]
         df = df.reset_index(level=1)
@@ -175,20 +175,13 @@ class DataProcessor:
             )
         )
         # Filter to desired date range
-        if df.index.nlevels == 2:
-            df = df[
-                (df.index.get_level_values(1) >= self.data.filter_start)
-                & (df.index.get_level_values(1) <= self.data.filter_end)
-            ]
-        else:
-            df = df.reset_index()
-            df = df[
-                (df["doa"] >= self.data.filter_start)
-                & (df["doa"] <= self.data.filter_end)
-            ]
+        df = df[
+            (df.index.get_level_values(1) >= self.data.filter_start)
+            & (df.index.get_level_values(1) <= self.data.filter_end)
+        ]
 
         # Add ID_RPG and convert types
-        df["ID_RPG"] = pracel_index
+        df["ID_RPG"] = file_id
         df = df.reset_index()
         df["ID_TS"] = df["ID_TS"].astype("int16")
         df["ID_RPG"] = df["ID_RPG"].astype("int32")

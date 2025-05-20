@@ -79,12 +79,13 @@ class EarthEngineClient:
         Returns:
             List of image data
         """
+        native_bands = [b for b in self.all_bands if b != "CLOUD_PROB"]
         images = (
             ee.ImageCollection(self.config.collection)
             .filterDate(start, end)
             .filterBounds(region)
             .filter(ee.Filter.eq("GENERAL_QUALITY", "PASSED"))
-            .select(self.all_bands)
+            .select(native_bands)
         )
 
         clouds = (
@@ -96,7 +97,7 @@ class EarthEngineClient:
         def add_cloud_prob(img):
             cloud_mask = ee.Image(img.get("cloud_mask"))
             cloud_prob = cloud_mask.select("probability").rename("CLOUD_PROB")
-            return img.addBands(cloud_prob)
+            return img.addBands(cloud_prob, overwrite=True)
 
         s2SrWithCloudMask = ee.Join.saveFirst("cloud_mask").apply(
             primary=images,

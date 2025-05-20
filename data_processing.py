@@ -101,9 +101,7 @@ class DataProcessor:
 
         return starts, ends
 
-    def process_dataframe(
-        self, df: pd.DataFrame, parcel_id: int, file_id: int
-    ) -> np.ndarray:
+    def process_dataframe(self, df: pd.DataFrame, parcel_id: int) -> np.ndarray:
         """
         Process the downloaded dataframe into the final array format.
 
@@ -179,7 +177,7 @@ class DataProcessor:
         ]
 
         # Add ID_RPG and convert types
-        df["ID_RPG"] = file_id
+        df["ID_RPG"] = parcel_id
         df = df.reset_index()
         df["ID_TS"] = df["ID_TS"].astype("int16")
         df["ID_RPG"] = df["ID_RPG"].astype("int32")
